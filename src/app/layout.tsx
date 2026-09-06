@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://viet-garden.netlify.app'),
   title: 'Viet Garden Restaurant & Coffee',
   description: 'Official website foundation for Viet Garden Restaurant & Coffee.',
 };
