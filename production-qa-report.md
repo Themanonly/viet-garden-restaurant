@@ -478,3 +478,60 @@ A temporary category was created through the real UI with localized FR/EN/AR nam
 ### Categories Verdict
 
 **CATEGORIES = NOT ACCEPTED / STOPPED AFTER CAT-QA-001**
+
+## CAT-QA-001 Focused Fix Verification
+
+Date: 2026-09-07
+Scope: Category-selector overflow only. Items, Featured, Media, Status/Schedule, Hero Video, SEO, Header, Footer, and unrelated UI were not changed.
+
+### Investigation and Affected Boundary
+
+The public menu category selector is rendered by `MenuCategoryNavigation` in `src/app/[locale]/menu/page.tsx` and styled by `.menu-category-nav` and `.menu-category-nav a` in `src/app/globals.css`. The selector uses five `minmax(0, 1fr)` columns and localized labels use `min-width: 0` and `overflow-wrap: anywhere`.
+
+The vulnerable layout boundary was the selector grid container and its direct anchor grid items: neither boundary explicitly constrained its own minimum/intrinsic width or included padding in the sizing calculation. The focused fix adds `min-width: 0`, `max-width: 100%`, and `box-sizing: border-box` to the selector, plus `max-width: 100%` and `box-sizing: border-box` to each selector link. No body/html overflow hiding was added.
+
+During the pre-fix replay, the exact 11th-category names were present and the instrumented selector measured within the viewport at both desktop and mobile widths; no individual element with a right edge beyond `clientWidth` was detectable. The previously captured production defect remains the motivating regression case, while the new constraints close the intrinsic-sizing gap at the responsible layout boundary.
+
+### Regression and Build Validation
+
+- Focused category navigation regression coverage includes 1, 2, 10, 11, and 12 categories, stable anchors, long localized names, and Arabic content.
+- Full repository regression suite: 80 passed, 0 failed.
+- TypeScript: passed with `node node_modules/typescript/bin/tsc --noEmit`.
+- Production build: passed with Next.js 16.3.4.
+- No unrelated tests were modified.
+
+### Production Deployment
+
+- Commit: `bcc9576` (`Fix category menu overflow`).
+- Existing GitHub `main` branch and existing Netlify site were used.
+- Netlify published the commit successfully in approximately 30 seconds.
+- No credentials, new login session, CAPTCHA, environment-variable, or domain changes were used.
+
+### Post-Fix Production Lifecycle
+
+The exact temporary category lifecycle was executed through the real Admin UI after deployment:
+
+1. Created `qa-acceptance-category` with FR `Categorie QA`, EN `QA Category`, and AR `فئة اختبار`.
+2. Fresh Admin reload confirmed 11 categories and the temporary record persisted.
+3. Fresh FR, EN, and AR menu checks found the localized category.
+4. At 1280px and 390px, all six public menu checks reported zero horizontal overflow. The selector had 11 children, measured 996px on desktop and 317.6px on mobile, and no element exceeded the viewport bounds.
+5. FR, EN, and AR desktop and mobile renders were visually inspected. Existing selector styling remained intact and Arabic remained RTL.
+6. Deleted the temporary category through Admin confirmation and freshly reloaded Admin.
+
+### Final Restoration
+
+- Admin returned to exactly 10 categories in the original order: Soupes, Salades, Hors D'oeuvre, Boeufs, Canards, Poulets, Fruits De Mer, Assortiments Sushi, Desserts, Eaux et Boissons Gazeuses.
+- Temporary category was absent from Admin and all public menus.
+- FR, EN, and AR public menus reported zero horizontal overflow after deletion.
+- Permanent Glovo schedule remained exact: Monday–Saturday 13:00–22:15; Sunday no periods.
+- Manual override remained enabled with stored OPEN and effective OPEN.
+- Temporary Closure remained OFF.
+- All FR/EN/AR closure and status messages remained empty.
+
+### Remaining Issues
+
+The pre-existing QA-002 hero-video aborted requests remain unchanged. CAT-QA-001 no longer reproduces after the focused deployment lifecycle, but the historical pre-fix overflow could not be independently re-triggered during this replay before applying the defensive sizing constraints.
+
+### CAT-QA-001 Verdict
+
+**CAT-QA-001 = FIXED AND VERIFIED IN PRODUCTION**
