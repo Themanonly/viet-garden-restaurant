@@ -634,3 +634,17 @@ Fresh Admin reload confirmed all three values. Clearing FR, EN, and AR together 
 **DESCRIPTION CLEARING = FIXED AND VERIFIED IN PRODUCTION**
 
 The broader Categories acceptance test remains incomplete and was not resumed.
+
+## Categories Acceptance Resume: Baseline Blocker
+
+Date: 2026-09-07
+
+A fresh read-only production baseline was captured before any category mutation. The category data itself was exact: 10 active categories in the original order, original IDs, FR/EN/AR names, empty descriptions, and original item counts. The permanent schedule was also intact at Monday–Saturday `13:00–22:15` with Sunday empty; Temporary Closure was OFF and all closure/status messages were empty.
+
+However, the accepted status baseline was not intact: fresh Admin reloads showed manual override disabled, stored OPEN, effective CLOSED, and `Weekly schedule` as the determining rule. A second fresh reload confirmed the same state. No Status or schedule mutation was performed because this task explicitly excludes correcting Status and requires the accepted baseline before Categories testing.
+
+The exhaustive Categories matrix was therefore stopped before any category mutation. No category, item, Featured, Media, schedule, closure, or message data was changed during this attempted continuation. The pre-existing QA-002 hero-video/RSC aborts remain untouched.
+
+### Resume Verdict
+
+**CATEGORIES = NOT ACCEPTED / STOPPED: ACCEPTED STATUS BASELINE NOT INTACT**
