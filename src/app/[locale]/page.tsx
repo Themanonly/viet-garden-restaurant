@@ -5,6 +5,8 @@ import { localizedText, locales, type Locale } from '../../content/models';
 import { createMenuRepository } from '../../content/menu-repository';
 import { PublicRestaurantStatus } from '../../components/public-restaurant-status';
 
+export const dynamic = 'force-dynamic';
+
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }

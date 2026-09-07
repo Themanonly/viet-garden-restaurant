@@ -3,6 +3,9 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { PublicRestaurantStatus } from '../components/public-restaurant-status';
 import { createAdminMenuService } from './admin-menu-service';
 import { AdminMenuUiAdapter } from './admin-menu-ui-adapter';
 import { createMediaRepository } from './media-repository';
@@ -72,6 +75,9 @@ test('Restaurant Status mutations persist through fresh public repositories', as
     const freshPublicState = await createMenuRepository(filePath).getMenu();
     assert.equal(updated.effectiveStatus, 'closed');
     assert.deepEqual(freshPublicState.availability, changedAvailability);
+    assert.match(renderToStaticMarkup(React.createElement(PublicRestaurantStatus, { availability: freshPublicState.availability, locale: 'fr' })), /FERMÉ/);
+    assert.match(renderToStaticMarkup(React.createElement(PublicRestaurantStatus, { availability: freshPublicState.availability, locale: 'en' })), /CLOSED/);
+    assert.match(renderToStaticMarkup(React.createElement(PublicRestaurantStatus, { availability: freshPublicState.availability, locale: 'ar' })), /مغلق/);
 
     await adminAdapter.updateAvailability(baseline.availability);
     const restored = await createMenuRepository(filePath).getMenu();
