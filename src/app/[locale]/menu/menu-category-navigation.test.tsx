@@ -17,6 +17,7 @@ function categories(count: number): MenuCategory[] {
 test('category navigation renders one or many categories with stable anchors', () => {
   for (const count of [1, 2, 10, 11, 12]) {
     const markup = renderToStaticMarkup(<MenuCategoryNavigation categories={categories(count)} locale="en" />);
+    assert.match(markup, /class="menu-category-nav"/);
     assert.equal((markup.match(/<a /g) ?? []).length, count);
     assert.match(markup, /href="#menu-category-category-1"/);
     assert.match(markup, new RegExp(`Category ${count}`));

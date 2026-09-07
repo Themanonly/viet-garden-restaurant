@@ -678,6 +678,9 @@ button, input, select, textarea {
 .menu-category-nav {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
   gap: 1px;
   margin-bottom: clamp(3rem, 6vw, 5rem);
   background: var(--color-outline);
@@ -689,8 +692,10 @@ button, input, select, textarea {
   align-items: baseline;
   gap: 0.65rem;
   min-width: 0;
+  max-width: 100%;
   min-height: 3.25rem;
   padding: 0.85rem 0.75rem;
+  box-sizing: border-box;
   background: var(--color-ivory);
   color: var(--color-text-soft);
   font-family: Georgia, "Times New Roman", serif;

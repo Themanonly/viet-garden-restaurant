@@ -1,0 +1,480 @@
+# Production Admin Panel Acceptance Test Report
+
+Date: 2026-09-07
+Environment: `https://viet-garden.netlify.app`
+Authentication: Reused the existing authenticated browser session. No credentials were requested or exposed.
+
+## Verdict
+
+**PRODUCTION NOT ACCEPTED**
+
+The test was intentionally stopped after the first controlled status round-trip exposed a production propagation defect. The exact baseline was restored and reverified before stopping. The exhaustive CRUD acceptance criteria were therefore not met.
+
+## Baseline Captured
+
+- Categories: 10, all active, in this order: Soupes, Salades, Hors D'oeuvre, Boeufs, Canards, Poulets, Fruits De Mer, Assortiments Sushi, Desserts, Eaux et Boissons Gazeuses.
+- Menu items: 45, all active. Admin inventory showed every item in MAD and the live English menu matched the Admin inventory and prices.
+- Featured sections: 1, active, `top-des-ventes`, displayed as Top des ventes / Best Sellers / الأكثر مبيعًا, with 3 selected items.
+- Media records: 48.
+- Status: effective OPEN; manual override enabled; stored status OPEN.
+- Weekly schedule: Monday through Sunday all had no periods.
+- Temporary closure: inactive.
+- Closure messages: FR, EN, and AR empty.
+- Status messages: FR, EN, and AR empty.
+- Public baseline: `/fr`, `/en/menu`, and `/ar` rendered the expected localized content and OPEN status during inspection.
+
+## Executed Coverage
+
+- Admin status baseline inspection: completed.
+- Status OPEN to CLOSED mutation: executed once.
+- Admin CLOSED rendering and saved state: visually inspected at mobile viewport.
+- Fresh public `/fr` navigation and reload after CLOSED mutation: completed.
+- Status restoration to OPEN: completed.
+- Fresh Admin reload after restoration: completed.
+- Fresh public `/fr` reload after restoration: completed.
+- Admin categories inventory: completed, 10 records captured.
+- Admin items inventory: completed, 45 records captured.
+- Featured inventory: completed, 1 section and 3 selected-item relationship count captured.
+- Media inventory: completed, 48 records captured; referenced media controls were visibly disabled for deletion.
+- Desktop and mobile status UI screenshots: captured.
+- FR/EN/AR public rendering spot checks: FR home, EN menu, and AR home inspected.
+
+Counters:
+
+- Categories tested individually / total: 0 / 10
+- Items tested individually / total: 0 / 45
+- Featured sections tested individually / total: 0 / 1
+- Media controls tested / total: 0 / not exhaustively tested
+- Status controls tested: 1 mutation round-trip; exhaustive status testing not completed
+- New categories created/tested/deleted: 0 / 0 / 0
+- New items created/tested/deleted: 0 / 0 / 0
+- New FeaturedSections created/tested/deleted: 0 / 0 / 0
+- Media uploads tested: 0
+- Media replacement tests: 0
+- Media deletion tests: 0
+- Referenced-media protection tests: 0; UI baseline showed referenced deletes disabled
+- Public propagation tests: 1 status mutation, failed
+- Persistence/reload tests: status mutation and restoration
+- Locales tested: FR, EN, AR spot checks; localized Admin fields baseline inspected
+- Desktop/mobile viewports tested: status section at desktop and 390px mobile
+- Total issues found: 2
+- Critical issues: 0
+- High issues: 1
+- Medium issues: 0
+- Low/cosmetic issues: 1
+
+## Issues
+
+### QA-001: Admin status does not propagate to public site
+
+- Admin section: Restaurant Status
+- Control/record: Manual override, stored status
+- Action: Changed stored status from OPEN to CLOSED with manual override enabled and saved.
+- Expected: Admin and fresh public `/fr`, `/en`, `/ar`, and menu pages should show CLOSED.
+- Actual: Admin showed CLOSED and reported Saved. Fresh public `/fr` navigation and reload continued to show OUVERT.
+- Reproducible: Confirmed for the executed round-trip; broader locale repetition was stopped after the first failure.
+- Locale: Admin UI and public FR; public EN/AR mutation verification not attempted after the failure.
+- Viewport: Admin mobile rendering inspected; public page rendered in the existing browser viewport.
+- Impact: Admin, public propagation, and production behavior.
+- Severity: High.
+- Evidence: Admin snapshot showed CLOSED, selected Closed, and Saved. Fresh public `/fr` snapshot showed OUVERT after navigation and reload.
+- Fix applied: No. This was a production QA run and the defect was not isolated safely during the acceptance test.
+- Regression verification: Restored OPEN, reloaded Admin and public `/fr`; both showed OPEN/OUVERT.
+
+### QA-002: Hero video requests repeatedly abort on public pages
+
+- Section: Public home page media rendering
+- Action: Inspected `/fr` and `/ar` during baseline and after fresh navigation.
+- Expected: Referenced hero media should load without failed requests.
+- Actual: Browser console repeatedly reported failed/aborted requests for `/media/viet-garden-hero-hq.mp4`.
+- Reproducible: Observed repeatedly during FR and AR page loads.
+- Locale: FR and AR.
+- Viewport: Existing browser viewport; not exhaustively checked at mobile.
+- Impact: Public media rendering.
+- Severity: Low based on the rendered pages remaining usable; visual media impact requires dedicated follow-up.
+- Evidence: Browser requestFailed events recorded during page loads.
+- Fix applied: No.
+- Regression verification: Not applicable.
+
+## Visual Observations
+
+- Desktop Admin status layout rendered coherently with sidebar, status card, override controls, schedule, closure, and localized message areas.
+- Mobile Admin switched to a Section select navigation and controls remained readable. The captured mobile viewport showed a large unused blank area to the right of the narrow content column; this was recorded but not changed.
+- Arabic public home rendered RTL Arabic navigation and content without an observed clipping issue in the inspected viewport.
+- No test records or altered prices/categories/media/featured relationships were left behind.
+
+## Restoration Verification
+
+After the failed propagation test, the exact status baseline was restored:
+
+- Effective status: OPEN.
+- Manual override: enabled.
+- Stored status: OPEN.
+- Weekly schedule: all seven days empty.
+- Temporary closure: inactive.
+- Closure messages: all empty.
+- Status messages: all empty.
+- Fresh Admin reload: verified.
+- Fresh public `/fr` reload: verified OUVERT.
+- Final fresh public route sweep: `/fr`, `/en`, `/ar`, `/fr/menu`, `/en/menu`, and `/ar/menu` all loaded with their localized titles and OPEN indicators.
+
+No category, item, featured section, media record, price, relationship, ordering, or localized content was mutated.
+
+## Acceptance Gaps
+
+The following required phases were not executed because the first status mutation failed public propagation: exhaustive category CRUD, item CRUD, featured CRUD, media destructive and replacement flows, temporary record creation/deletion, all status cycles and schedule validation, full public locale propagation, full persistence verification, and final visual QA across every required route and viewport.
+
+A follow-up run should first diagnose and correct or explicitly waive the status propagation defect, then repeat the acceptance test against a captured live baseline with a structured evidence log and restoration checkpoints.
+
+## QA-001 Follow-up Diagnosis and Fix
+
+### Root Cause
+
+Admin and public code already shared the same authoritative Supabase source: `restaurant_availability` is read by `SupabaseMenuRepository.getMenu()`, and Admin writes the complete menu document through the `replace_menu_document` RPC. The public menu route was already dynamic. The public homepage route was not dynamic, so Next.js statically generated the homepage status and served the build-time OPEN value after the Admin mutation. This was a rendering/cache boundary defect, not a Supabase persistence or effective-status calculation defect.
+
+### Files and Components
+
+- `src/app/[locale]/page.tsx`: homepage data read and public status rendering.
+- `src/app/[locale]/menu/page.tsx`: already declared `dynamic = 'force-dynamic'`.
+- `src/content/admin-menu-actions.ts`: authenticated Admin mutation boundary.
+- `src/content/admin-ui-adapter-instance.ts`: production Admin composition.
+- `src/content/supabase-admin-repository.ts`: Supabase Admin repository composition.
+- `src/content/supabase-menu-repository.ts`: reads `restaurant_availability` and writes through `replace_menu_document`.
+- `src/components/public-restaurant-status.tsx`: effective status calculation and localized rendering.
+
+### Fix
+
+Added `export const dynamic = 'force-dynamic'` to `src/app/[locale]/page.tsx`, matching the existing menu route. This keeps the homepage on the same fresh server-side Supabase read path as the menu and avoids introducing a second availability store or client-side synchronization.
+
+### Regression Test
+
+Extended `src/content/admin-public-menu-data-flow.test.ts` so the Admin availability mutation is followed by a fresh public repository instance, persisted availability assertions, and FR/EN/AR `PublicRestaurantStatus` rendering assertions for CLOSED before restoring the baseline.
+
+### Validation
+
+- Focused status regression: passed.
+- TypeScript compiler: passed via local `typescript` binary.
+- Next production build: completed and produced `.next/BUILD_ID`.
+- Local built server: started on `http://127.0.0.1:3100`; homepage rendered the baseline OPEN state.
+- Local visual verification: FR homepage desktop and AR menu mobile rendered correctly with no horizontal overflow; Arabic menu text rendered RTL.
+- Admin Status visual verification: existing production-session desktop and 390px mobile baseline screenshots remained clean; the Admin UI was not changed by this fix.
+- Six-route public verification after the source fix: not claimable against production until deployment; the pre-fix production baseline routes were already verified as restored OPEN.
+- Production browser round-trip #1: not rerun because the deployed Netlify site does not yet contain this local fix.
+- Production browser round-trip #2: not rerun for the same reason.
+- Production baseline: preserved; no follow-up production mutation was made.
+
+### Pre-deployment Follow-up Verdict
+
+**QA-001 PARTIALLY FIXED**
+
+At this interim stage, the root cause was fixed in source and covered by a passing regression test, but production deployment and the two mandatory six-route CLOSED/OPEN browser round-trips remained outstanding. The later production verification below supersedes this interim verdict. The pre-existing aborted hero-video requests remain intentionally untouched.
+
+## QA-001 Production Deployment Verification
+
+### Deployment
+
+- Deployed commit: `2ba7f4c` (`Fix dynamic public restaurant status`).
+- Repository: `Themanonly/viet-garden-restaurant`, `main`.
+- Netlify production: Published successfully from `main@2ba7f4c` in 29 seconds.
+- Production URL: `https://viet-garden.netlify.app`.
+- CAPTCHA/human verification: none presented.
+
+### Production Baseline Before Mutation
+
+- Admin effective status: OPEN.
+- Manual override: enabled.
+- Stored status: OPEN.
+- Monday through Sunday: no periods.
+- Temporary closure: inactive.
+- FR/EN/AR closure messages: empty.
+- FR/EN/AR status messages: empty.
+- Fresh `/fr`, `/en`, `/ar`, `/fr/menu`, `/en/menu`, and `/ar/menu`: all loaded OPEN in the correct localized form, with no horizontal overflow and no relevant public-route console errors.
+
+### Round-trip #1
+
+- Admin OPEN -> CLOSED: saved successfully; Admin displayed CLOSED and Manual override remained active.
+- Fresh public CLOSED results: `/fr` FERMÉ, `/en` CLOSED, `/ar` مغلق, `/fr/menu` FERMÉ, `/en/menu` CLOSED, `/ar/menu` مغلق.
+- All six CLOSED routes had no horizontal overflow or relevant console errors.
+- Arabic menu was visually inspected and rendered RTL.
+- Admin CLOSED -> OPEN: saved successfully.
+- Fresh public OPEN restoration: `/fr` OUVERT, `/en` OPEN, `/ar` مفتوح, `/fr/menu` OUVERT, `/en/menu` OPEN, `/ar/menu` مفتوح.
+
+### Round-trip #2
+
+- Admin OPEN -> CLOSED: saved successfully; Admin displayed CLOSED and Manual override remained active.
+- Fresh public CLOSED results: `/fr` FERMÉ, `/en` CLOSED, `/ar` مغلق, `/fr/menu` FERMÉ, `/en/menu` CLOSED, `/ar/menu` مغلق.
+- All six CLOSED routes had no horizontal overflow or relevant console errors.
+- Admin CLOSED -> OPEN: saved successfully.
+- Fresh public OPEN restoration: `/fr` OUVERT, `/en` OPEN, `/ar` مفتوح, `/fr/menu` OUVERT, `/en/menu` OPEN, `/ar/menu` مفتوح.
+
+### Final Baseline
+
+- Admin fresh reload: OPEN, manual override enabled, stored OPEN.
+- Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, and Sunday: empty schedules.
+- Temporary closure: inactive.
+- Closure messages FR/EN/AR: empty.
+- Status messages FR/EN/AR: empty.
+- Fresh public reload of all six routes: OPEN restored in every locale and page type.
+- Admin desktop and 390px mobile were visually inspected; no fix-related layout regression or horizontal overflow was observed.
+- FR/EN/AR home and menu states were visually inspected; Arabic remained RTL and no fix-related visual regression was observed.
+
+### Remaining Issues
+
+No new QA-001 issues were found. QA-002, the pre-existing aborted hero-video requests, remains unchanged as required. Existing Next/RSC aborted navigation requests were not related to status propagation and were not modified.
+
+### Final QA-001 Verdict
+
+**QA-001 FIXED AND VERIFIED**
+
+## Restaurant Schedule Acceptance Test
+
+### Glovo Source Schedule
+
+The already-open Glovo restaurant page was inspected without CAPTCHA or human-verification prompts. Its establishment-information panel displayed:
+
+- Monday: `13:00 - 22:15`
+- Tuesday: `13:00 - 22:15`
+- Wednesday: `13:00 - 22:15`
+- Thursday: `13:00 - 22:15`
+- Friday: `13:00 - 22:15`
+- Saturday: `13:00 - 22:15`
+- Sunday: `Fermé`
+
+No split periods were displayed. A visual screenshot of the Glovo information panel was captured; the schedule text was read directly from the rendered page.
+
+### Admin Baseline
+
+Before mutation, production Admin Status confirmed:
+
+- Effective status: OPEN.
+- Manual override: enabled.
+- Stored status: OPEN.
+- Monday through Sunday: no periods.
+- Temporary closure: inactive.
+- Closure messages FR/EN/AR: empty.
+- Status messages FR/EN/AR: empty.
+
+Because the Glovo schedule was not present in the stored Admin baseline, it was used only as temporary test data and was not left in production.
+
+### Schedule Controls and Seven-Day Coverage
+
+- Entered the exact Glovo single period for Monday through Saturday through the Admin UI.
+- Kept Sunday empty to represent Glovo `Fermé`.
+- Saved and freshly reloaded; all six periods persisted exactly and Sunday remained empty.
+- Tested add, edit, and remove period controls on Monday.
+- Added a valid second Monday period `22:30–23:59`; it persisted across reload and was then removed successfully.
+- Tested all seven day controls: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, and Sunday.
+- Tested Sunday empty-day behavior and restored it to empty.
+
+### Validation Tests
+
+- Valid single periods: passed.
+- Valid multiple periods in chronological order: passed and persisted.
+- Boundary period `00:00–23:59`: passed and persisted temporarily, then removed.
+- Reversed period `22:15–13:00`: rejected with a structured `schedule.monday[0].opens` validation error; prior valid data survived reload.
+- Overlapping period `20:00–21:00`: rejected with an overlapping-period validation error; prior valid data survived reload.
+- Duplicate period `13:00–22:15`: rejected as overlapping; prior valid data survived reload.
+- Empty Sunday: persisted correctly.
+
+No invalid schedule data remained persisted.
+
+### Effective Status and Override Precedence
+
+At the test time, Monday was 10:41–10:45 and the Glovo schedule opened at 13:00.
+
+- With the Glovo schedule and manual override disabled, fresh Admin showed CLOSED with `Weekly schedule` as the determining rule.
+- The six public routes showed localized CLOSED: FR `FERMÉ`, EN `CLOSED`, AR `مغلق`.
+- A temporary Monday `00:00–23:59` schedule produced fresh Admin OPEN with `Weekly schedule` as the rule, and all six public routes showed localized OPEN.
+- Restoring the Glovo schedule returned fresh Admin to CLOSED under schedule authority.
+- Manual OPEN override forced Admin and all six public routes OPEN.
+- Manual CLOSED override forced Admin and all six public routes CLOSED.
+- Disabling manual override returned authority to the Glovo schedule and Admin CLOSED.
+
+### Public Propagation
+
+For each schedule-effective and override state, fresh requests were made to:
+
+- `/fr`
+- `/en`
+- `/ar`
+- `/fr/menu`
+- `/en/menu`
+- `/ar/menu`
+
+Home and menu routes propagated the expected localized status in every tested state. No horizontal overflow or relevant public-route console/runtime errors were observed.
+
+### Visual Verification
+
+- Glovo schedule information panel: inspected.
+- Admin Status desktop: inspected after schedule saves, validation errors, effective-status changes, and restoration.
+- Admin Status mobile: inspected at 390px after final restoration.
+- FR, EN, and AR home/menu states: inspected during public propagation.
+- Arabic menu: visually inspected in RTL at mobile width; no clipping or horizontal overflow observed.
+- No UI redesign or unrelated fix was made.
+
+### Final Restoration
+
+Fresh Admin reload confirmed the exact original production baseline:
+
+- Effective status: OPEN.
+- Manual override: enabled.
+- Stored status: OPEN.
+- Monday–Sunday: zero periods.
+- Temporary closure: inactive.
+- Closure messages FR/EN/AR: empty.
+- Status messages FR/EN/AR: empty.
+
+Fresh reloads of all six public routes showed OUVERT/OPEN/مفتوح. No schedule, status, closure, message, or unrelated content remained changed.
+
+### Schedule Issues
+
+No schedule defects were found. The pre-existing QA-002 hero-video aborted requests and routine Next/RSC aborted navigation requests were not modified.
+
+### Schedule Verdict
+
+**SCHEDULE = ACCEPTED**
+
+## Closure and Messages Acceptance Test
+
+Date: 2026-09-07
+Environment: `https://viet-garden.netlify.app`
+Authentication: Reused the existing authenticated Admin browser session. No credentials were requested, displayed, copied, or exposed. No CAPTCHA/reCAPTCHA appeared.
+
+### Baseline
+
+The previously captured acceptance baseline was effective OPEN, manual override enabled, stored OPEN, Monday through Sunday empty, temporary closure inactive, and all FR/EN/AR closure and status-message fields empty. The resumed browser session was intentionally mid-test with Temporary Closure active and controlled messages present; after completing the checks, the exact captured baseline was restored and freshly verified at the end.
+
+### Temporary Closure Basic Flow
+
+Temporary Closure was enabled with distinct FR, EN, and AR messages. Admin saved successfully, a fresh Admin reload preserved the active flag and all three values, and the Admin desktop rendering remained coherent. Fresh home and menu checks showed CLOSED plus the correct localized message on all six routes, without horizontal overflow.
+
+### Localization Isolation
+
+FR, EN, and AR closure messages were tested independently. Initial distinct values, an EN-only change, and an AR-only change each persisted without cross-locale mutation and propagated to both home and menu routes. Clearing FR or EN while closure was active was rejected by the existing validation contract because all three closure languages require values. No localization architecture was changed.
+
+### Temporary Closure Precedence and Manual Override
+
+The controlled matrix was verified with fresh Admin reloads and six-route public checks after each save:
+
+- Temporary Closure ON + manual OPEN: CLOSED, determined by Temporary closure.
+- Temporary Closure ON + manual CLOSED: CLOSED, determined by Temporary closure.
+- Temporary Closure OFF + manual CLOSED: CLOSED, determined by Manual override.
+- Temporary Closure OFF + manual OPEN: OPEN, determined by Manual override.
+
+Temporary Closure therefore has precedence over manual override in the existing implementation. The schedule remained untouched because the schedule acceptance test was already accepted; its empty baseline was preserved.
+
+### Status Messages
+
+With Temporary Closure OFF, distinct FR/EN/AR status messages persisted and appeared in the matching locale on all six routes. FR-only, EN-only, and AR-only changes were each verified independently. Empty status messages are accepted when all three are empty; a partial clear is rejected with the field-associated validation error `statusMessage.fr` and the previous persisted value remains unchanged.
+
+### Empty, Whitespace, and Long Messages
+
+Whitespace-only closure content is accepted by the existing validation behavior and persists as whitespace; the corresponding public message renders empty without falling back to another locale or breaking layout. Normal accented French, English punctuation, Arabic Unicode, and mixed punctuation were accepted. A reasonably long FR, EN, and AR closure message persisted and wrapped correctly.
+
+### Responsive and Visual Verification
+
+Admin desktop and 390px mobile views were inspected with the long messages. FR, EN, and AR public home pages were visually inspected at 390px; messages wrapped, Arabic remained visually RTL, controls stayed in place, and no horizontal overflow or clipping was observed. The six public home/menu routes were freshly inspected for status, message presence, overflow, and RTL markup. No closure/messages UI regression was found.
+
+### Six-Route Propagation and Persistence
+
+Fresh production navigation after valid closure configuration produced the expected localized CLOSED state and closure message on `/fr`, `/en`, `/ar`, `/fr/menu`, `/en/menu`, and `/ar/menu`. Fresh Admin reloads and fresh public navigation preserved the configuration. The final restored sweep produced OUVERT, OPEN, مفتوح, OUVERT, OPEN, مفتوح respectively, with no temporary closure and no message on any route.
+
+### Validation Results
+
+- Closure active with an empty FR message: rejected with `temporaryClosure.message.fr`.
+- Closure active with an empty EN message: rejected by the existing required-localized-message contract; prior value remained persisted.
+- Closure active with whitespace-only FR: accepted and persisted as entered.
+- Status messages with empty FR while EN/AR were populated: rejected with `statusMessage.fr`.
+- All status messages empty: accepted and persisted.
+- Normal, Unicode, accented, punctuated, and long values: accepted and persisted.
+
+No production defect was found in the requested closure/message functionality. The pre-existing hero-video aborted requests were observed but intentionally not changed.
+
+### Counters
+
+- Temporary closure enable/disable tests: 6
+- FR message tests: 7
+- EN message tests: 6
+- AR message tests: 6
+- Status-message tests: 8
+- Localization isolation tests: 6
+- Precedence tests: 4
+- Validation tests: 7
+- Desktop visual checks: 4
+- Mobile visual checks: 4
+- Public six-route propagation checks: 9
+
+### Final Restoration
+
+Fresh Admin reload confirmed: effective OPEN, manual override enabled, stored OPEN, seven empty schedule days, temporary closure inactive, and all six localized message fields empty. Fresh reloads of all six public routes confirmed the localized OPEN state, no temporary closure message, no horizontal overflow, and RTL markup on both Arabic routes.
+
+### Closure/Messages Verdict
+
+**CLOSURE/MESSAGES = ACCEPTED**
+
+## Permanent Glovo Schedule Configuration
+
+Date: 2026-09-07
+Environment: `https://viet-garden.netlify.app`
+Authentication: Reused the existing authenticated Admin browser session. No credentials were requested or exposed. No CAPTCHA/reCAPTCHA appeared.
+
+### Saved Configuration
+
+The exact schedule previously captured and accepted from the official Glovo page was saved through the production Admin UI:
+
+- Monday: 13:00–22:15
+- Tuesday: 13:00–22:15
+- Wednesday: 13:00–22:15
+- Thursday: 13:00–22:15
+- Friday: 13:00–22:15
+- Saturday: 13:00–22:15
+- Sunday: no periods / CLOSED
+
+Temporary Closure remained OFF. FR/EN/AR closure messages and status messages remained empty. Manual override remained enabled with stored OPEN.
+
+### Persistence and Public Verification
+
+Admin reported Saved. A fresh Admin reload confirmed all six periods persisted exactly and Sunday remained empty. Effective status was OPEN with `Manual override` as the determining rule. Fresh checks of `/fr`, `/en`, `/ar`, `/fr/menu`, `/en/menu`, and `/ar/menu` showed OUVERT, OPEN, مفتوح, OUVERT, OPEN, مفتوح respectively. Arabic routes contained RTL markup; all six routes had no horizontal overflow.
+
+Admin Status was visually inspected at desktop and 390px mobile widths. The schedule values were readable, Sunday remained visibly empty, and no clipping or overflow was observed. The schedule was intentionally left saved in production and was not cleared afterward.
+
+### Categories Phase Result
+
+The Categories phase began only after the schedule save and verification. The exact category baseline was captured: 10 active categories in the accepted order, with IDs `soupes`, `salades`, `hors-doeuvre`, `boeufs`, `canards`, `poulets`, `fruits-de-mer`, `assortiments-sushi`, `desserts`, and `eaux-boissons-gazeuses`; item counts were 6, 5, 11, 1, 1, 6, 5, 6, 2, and 2. Localized FR/EN/AR names were captured.
+
+After the user reauthenticated in the existing browser session, all 10 categories received reversible FR edit/save/fresh-reload/public-menu round trips. Each changed FR value appeared in the FR menu, did not leak into EN, and was restored. Independent EN and AR edits on Soupes persisted, propagated only to their matching public locales, and were restored. Deactivate/reactivate behavior hid and restored Soupes in the public menu. Move-down and move-up controls changed the first two category positions and restored the original order. Required-field validation rejected an empty FR name with a field-associated error and did not persist it.
+
+A temporary category was created through the real UI with localized FR/EN/AR names and descriptions. It persisted after reload and propagated to all three public menus. The public menu then reported horizontal overflow in FR, EN, and AR while the temporary category existed. This was treated as a production visual defect under the stop rule. The temporary category was deleted through the Admin UI with confirmation, and the exact 10-category baseline was restored. After cleanup, all three public menus again had no overflow.
+
+### Category Issue
+
+**CAT-QA-001: Creating a category causes public menu horizontal overflow**
+
+- Reproduction: create `qa-acceptance-category` with normal localized names `Categorie QA`, `QA Category`, and `فئة اختبار`; save and freshly reload.
+- Actual: the category appeared correctly in Admin and all three public menus, but FR, EN, and AR menu pages reported `body.scrollWidth > body.clientWidth`.
+- Arabic still contained RTL markup. The overflow was observed in all three locales after creation.
+- Cleanup: temporary category deleted through Admin; fresh Admin reload returned to 10 baseline categories and fresh FR/EN/AR menu checks returned to no overflow.
+- No UI or application fix was attempted. The hero video, schedule, items, featured sections, media, prices, and unrelated content were not touched.
+
+### Category Counters
+
+- Existing categories individually tested: 10 / 10
+- FR edit round trips: 10
+- EN localization isolation tests: 1
+- AR localization isolation tests: 1
+- Active/inactive tests: 2
+- Reorder/move tests: 2
+- Required-field validation tests: 1
+- Temporary category creation tests: 1
+- Temporary category deletion tests: 1
+- Public FR/EN/AR propagation checks: completed for edited and created records
+- Category baseline restoration: verified, 10 categories in original order
+- Category visual defects found: 1 (CAT-QA-001)
+
+### Permanent Schedule Verdict
+
+**GLOVO SCHEDULE = SAVED AND VERIFIED**
+
+### Categories Verdict
+
+**CATEGORIES = NOT ACCEPTED / STOPPED AFTER CAT-QA-001**
