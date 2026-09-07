@@ -535,3 +535,39 @@ The pre-existing QA-002 hero-video aborted requests remain unchanged. CAT-QA-001
 ### CAT-QA-001 Verdict
 
 **CAT-QA-001 = FIXED AND VERIFIED IN PRODUCTION**
+
+## Categories Acceptance Continuation: Stop on Description Restoration Defect
+
+Date: 2026-09-07
+Scope: Categories only. No Items, Featured, Media, Status/Schedule, Hero Video, SEO, Header, Footer, branding, or unrelated UI was changed.
+
+### Fresh Baseline
+
+Before resuming mutations, production Admin confirmed the exact 10-category order, IDs, localized FR/EN/AR names, all categories active, original item counts, empty descriptions, permanent Monday–Saturday `13:00–22:15` schedule with Sunday empty, manual override enabled/stored OPEN, Temporary Closure OFF, and all closure/status messages empty.
+
+### Description Tests Completed
+
+On the existing Soupes category, the Admin UI accepted and persisted complete localized descriptions:
+
+- FR: `Description Soupes FR QA`
+- EN: `Soups description EN QA`
+- AR: `وصف الشوربات اختبار`
+
+FR-only, EN-only, and AR-only edits then persisted independently while the other two localized descriptions remained unchanged. The public menu does not render category descriptions, so no public description propagation surface exists; public menu names and layout remained unchanged during these checks.
+
+### Defect: Optional Descriptions Cannot Be Cleared
+
+After the description edits, clearing all three description fields through the real Admin UI and saving was rejected. The Admin returned the structured validation errors:
+
+- `description.en`: `Menu category description requires an English value: soupes.`
+- `description.ar`: `Menu category description requires an Arabic value: soupes.`
+
+The exact cause is in the existing validation/data contract: `category.description` is treated as present whenever it is an object, and then FR, EN, and AR must all contain non-empty values. The Admin clear handlers retain an object with empty localized keys instead of removing the optional description object, so an optional description cannot be restored to its original empty state through the Admin UI.
+
+### Stop and Restoration Status
+
+This is a genuine production Categories defect and blocks exact baseline restoration. No direct database/API bypass was used, and no unrelated mutation was attempted. The permanent Glovo schedule and all status/closure/message values remain unchanged. The Categories phase is stopped; Items, Featured, and Media testing must not begin until this defect is resolved and Soupes’ original empty descriptions are restored and verified.
+
+### Categories Continuation Verdict
+
+**CATEGORIES = NOT ACCEPTED / STOPPED: OPTIONAL DESCRIPTION CLEARING CANNOT RESTORE BASELINE**
