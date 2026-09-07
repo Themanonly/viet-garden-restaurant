@@ -42,7 +42,7 @@ export const restaurantProfile: RestaurantProfile = {
       id: 'facebook',
       platform: 'facebook',
       label: { fr: 'Facebook', en: 'Facebook', ar: 'Facebook' },
-      url: 'https://web.facebook.com/vietgardenofficiel/',
+      url: 'https://www.facebook.com/vietgardenofficiel/',
       enabled: true,
     },
   ],

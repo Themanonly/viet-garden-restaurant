@@ -12,12 +12,39 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale: rawLocale } = await params;
   const locale = (locales as readonly string[]).includes(rawLocale) ? rawLocale as Locale : 'fr';
   const seo = getSeoMetadata(locale, 'menu');
+  const titleText = localizedText(seo.title, locale);
+  const descriptionText = localizedText(seo.description, locale);
+  const siteUrl = `https://viet-garden.netlify.app/${locale}/menu`;
+  const ogLocale = locale === 'fr' ? 'fr_FR' : locale === 'ar' ? 'ar_MA' : 'en_US';
+
   return {
-    title: localizedText(seo.title, locale),
-    description: localizedText(seo.description, locale),
+    title: titleText,
+    description: descriptionText,
     alternates: {
       canonical: seo.canonicalPath,
       languages: Object.fromEntries(Object.entries(localeAlternates).map(([alternateLocale, path]) => [alternateLocale, `${path}/menu`])),
+    },
+    openGraph: {
+      title: titleText,
+      description: descriptionText,
+      url: siteUrl,
+      siteName: 'Viet Garden Restaurant & Coffee',
+      locale: ogLocale,
+      type: 'website',
+      images: [
+        {
+          url: 'https://viet-garden.netlify.app/media/viet-garden-hero-poster.jpg',
+          width: 1200,
+          height: 630,
+          alt: 'Menu Viet Garden Restaurant & Coffee Casablanca',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: titleText,
+      description: descriptionText,
+      images: ['https://viet-garden.netlify.app/media/viet-garden-hero-poster.jpg'],
     },
   };
 }
