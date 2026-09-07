@@ -571,3 +571,66 @@ This is a genuine production Categories defect and blocks exact baseline restora
 ### Categories Continuation Verdict
 
 **CATEGORIES = NOT ACCEPTED / STOPPED: OPTIONAL DESCRIPTION CLEARING CANNOT RESTORE BASELINE**
+
+## Description Clearing Focused Fix
+
+Date: 2026-09-07
+Scope: Optional category descriptions only. Items, Featured, Media, Status/Schedule, Temporary Closure, Messages, Hero Video/QA-002, SEO, Header, Footer, branding, and category-selector sizing were not changed.
+
+### Root Cause and Affected Boundary
+
+The Admin editor retained cleared localized description keys as `{ fr: '', en: '', ar: '' }`. `AdminMenuService.updateCategory` forwarded that object to `MenuMutationService.updateCategory`; the domain mutation used `Object.assign`, so an existing description property was never deleted. Validation then interpreted the present object as an optional description requiring complete FR/EN/AR values.
+
+### Fix
+
+- `src/content/admin-menu-service.ts` normalizes an all-empty or whitespace-only optional localized description to an explicit clear signal before mutation.
+- `src/content/menu-mutations.ts` detects that explicit clear before cloning and deletes the category description property instead of assigning an undefined value.
+- Complete localized descriptions remain accepted.
+- Editing FR, EN, or AR preserves the other populated locales.
+- Partial localized descriptions remain rejected with structured field errors.
+- Empty optional descriptions are represented as absent, not as a populated empty object.
+
+### Regression Tests and Validation
+
+Focused regression coverage verifies no description, complete FR/EN/AR descriptions, FR/EN/AR isolation edits, all-empty clearing, whitespace-only clearing, fresh service reload, partial-description rejection, and preservation of unrelated category fields. CAT-QA-001 category-selector regression remains passing.
+
+- Full test suite: 81 passed, 0 failed.
+- TypeScript: passed.
+- Production build: passed.
+
+### Production Deployment
+
+- Commit `77bd94e`: `Fix clearing optional category descriptions`.
+- Existing `main` to existing Netlify production workflow used.
+- Netlify published successfully in 34 seconds.
+- No credentials were requested or exposed; no CAPTCHA/human verification appeared.
+
+### Production Verification
+
+Before mutation, production Admin confirmed Soupes had the controlled QA descriptions from the stopped acceptance phase, while names and active state were unchanged. Status confirmed effective OPEN, manual override enabled, stored OPEN, permanent Monday–Saturday `13:00–22:15` schedule, Sunday empty, Temporary Closure OFF, and all closure/status messages empty.
+
+Through the real Admin UI, Soupes was populated with:
+
+- FR: `Description Soupes FR QA`
+- EN: `Soups description EN QA`
+- AR: `وصف الشوربات اختبار`
+
+Fresh Admin reload confirmed all three values. Clearing FR, EN, and AR together then saved successfully without `description.en` or `description.ar` errors. A fresh Admin reload confirmed all three values remained empty, while Soupes FR/EN/AR names remained unchanged.
+
+### Visual and Integrity Verification
+
+- Admin category editor: visually inspected at 1280px and 390px with cleared fields; no overflow or clipping.
+- FR, EN, and AR public pages: visually inspected at mobile width; no overflow, Arabic remained RTL, and no description leakage appeared because category descriptions are not public-rendered content.
+- Final Admin integrity: 10 original categories in original order; Soupes descriptions absent/empty.
+- Featured: 1 section, 3 selected items.
+- Media: 48 records.
+- Status: OPEN, manual override enabled, stored OPEN.
+- Permanent schedule: Monday–Saturday 13:00–22:15; Sunday no periods.
+- Temporary Closure OFF; all closure/status messages empty.
+- Pre-existing hero-video and routine RSC aborts remain unchanged.
+
+### Final Verdict
+
+**DESCRIPTION CLEARING = FIXED AND VERIFIED IN PRODUCTION**
+
+The broader Categories acceptance test remains incomplete and was not resumed.
