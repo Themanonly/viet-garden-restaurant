@@ -83,7 +83,10 @@ export class MenuMutationService {
     return this.mutate((draft) => {
       const category = draft.categories.find((candidate) => candidate.id === categoryId);
       if (!category) throw new MenuMutationError('category-not-found', `Category does not exist: ${categoryId}.`);
-      Object.assign(category, clone(update));
+      const clearsDescription = Object.prototype.hasOwnProperty.call(update, 'description') && update.description === undefined;
+      const nextUpdate = clone(update);
+      if (clearsDescription) delete category.description;
+      Object.assign(category, nextUpdate);
       normalizeSortOrder(draft.categories);
     });
   }

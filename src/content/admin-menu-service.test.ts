@@ -59,6 +59,38 @@ test('Admin invalid category creation returns a structured validation error atom
   assert.deepEqual(await repository.getMenu(), before);
 });
 
+test('Admin category descriptions support complete edits and clearing back to absence', async () => {
+  const { repository, service } = serviceWithRepository();
+  const original = (await repository.getMenu()).categories.find((category) => category.id === 'soupes');
+  assert.equal(original?.description, undefined);
+
+  const complete = await service.updateCategory('soupes', { description: { fr: 'FR description', en: 'EN description', ar: 'وصف عربي' } });
+  assert.deepEqual(complete.description, { fr: 'FR description', en: 'EN description', ar: 'وصف عربي' });
+
+  const frEdited = await service.updateCategory('soupes', { description: { fr: 'FR edited', en: 'EN description', ar: 'وصف عربي' } });
+  assert.deepEqual(frEdited.description, { fr: 'FR edited', en: 'EN description', ar: 'وصف عربي' });
+  const enEdited = await service.updateCategory('soupes', { description: { fr: 'FR edited', en: 'EN edited', ar: 'وصف عربي' } });
+  assert.deepEqual(enEdited.description, { fr: 'FR edited', en: 'EN edited', ar: 'وصف عربي' });
+  const arEdited = await service.updateCategory('soupes', { description: { fr: 'FR edited', en: 'EN edited', ar: 'وصف عربي معدل' } });
+  assert.deepEqual(arEdited.description, { fr: 'FR edited', en: 'EN edited', ar: 'وصف عربي معدل' });
+
+  const cleared = await service.updateCategory('soupes', { description: { fr: '', en: '', ar: '' } });
+  assert.equal(cleared.description, undefined);
+  const freshService = new AdminMenuService(
+    new MenuMutationService(repository, new LocalMediaRepository()),
+    new LocalMediaRepository(),
+  );
+  const reloaded = (await freshService.getManagementState()).categories.find((category) => category.id === 'soupes');
+  assert.equal(reloaded?.description, undefined);
+  assert.equal(reloaded?.name.fr, original?.name.fr);
+  assert.equal(reloaded?.active, original?.active);
+
+  const whitespaceCleared = await service.updateCategory('soupes', { description: { fr: ' ', en: '\t', ar: '  ' } });
+  assert.equal(whitespaceCleared.description, undefined);
+  await expectFieldError(service.updateCategory('soupes', { description: { fr: 'Only FR', en: '', ar: '' } }), 'description.en');
+  assert.equal((await repository.getMenu()).categories.find((category) => category.id === 'soupes')?.description, undefined);
+});
+
 test('Admin item creation and update use domain mutations', async () => {
   const { service } = serviceWithRepository();
   const created = await service.createItem(itemInput('admin-item'));

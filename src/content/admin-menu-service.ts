@@ -127,6 +127,12 @@ function clone<T>(value: T): T {
   return structuredClone(value);
 }
 
+function normalizeOptionalLocalizedText(value: LocalizedText | undefined): LocalizedText | undefined {
+  if (!value) return undefined;
+  const hasValue = [value.fr, value.en, value.ar].some((entry) => typeof entry === 'string' && entry.trim().length > 0);
+  return hasValue ? clone(value) : undefined;
+}
+
 function toCategoryDto(category: MenuCategory): AdminCategoryDto {
   return clone(category);
 }
@@ -184,7 +190,7 @@ export class AdminMenuService {
       const category: MenuCategory = {
         id: input.id,
         name: clone(input.name),
-        ...(input.description ? { description: clone(input.description) } : {}),
+        ...(normalizeOptionalLocalizedText(input.description) ? { description: normalizeOptionalLocalizedText(input.description) } : {}),
         sortOrder: input.sortOrder ?? menu.categories.length,
         active: input.active ?? true,
       };
@@ -195,7 +201,12 @@ export class AdminMenuService {
 
   async updateCategory(categoryId: string, input: AdminCategoryUpdateInput): Promise<AdminCategoryDto> {
     return this.execute('category', async () => {
-      const updated = await this.mutations.updateCategory(categoryId, clone(input));
+      const { description, ...rest } = clone(input);
+      const normalizedInput: AdminCategoryUpdateInput = {
+        ...rest,
+        ...(description !== undefined ? { description: normalizeOptionalLocalizedText(description) } : {}),
+      };
+      const updated = await this.mutations.updateCategory(categoryId, normalizedInput);
       return toCategoryDto(updated.categories.find((candidate) => candidate.id === categoryId) as MenuCategory);
     });
   }
