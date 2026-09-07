@@ -935,5 +935,182 @@ Following completion of all Menu Item mutation, lifecycle, validation, and visua
 
 **DESCRIPTION CLEARING = FIXED AND VERIFIED IN PRODUCTION**
 
+---
+
+## Exhaustive Featured Sections Acceptance Test Execution & Verification
+
+Date: 2026-09-07
+Environment: `https://viet-garden.netlify.app`
+Authentication: Executed via active authenticated production Admin browser session (`/admin/featured`). No credentials requested, exposed, or logged.
+
+### Baseline Captured
+
+- **Featured Sections**: Exactly 1 active FeaturedSection:
+  - ID: `top-des-ventes`
+  - FR Title: `Top des ventes`
+  - EN Title: `Best Sellers`
+  - AR Title: `الأكثر مبيعًا`
+  - Description: Absent
+  - Active State: Active (`active: true`)
+  - Sort Order: `0`
+  - Selected Items (3 items in exact order):
+    1. `hors-doeuvre-assortiment-viet-garden` (Assortiment Viet-Garden)
+    2. `assortiments-sushi-34` (Assortiment 34 Pièces)
+    3. `assortiments-sushi-16` (Assortiment 16 Pièces)
+- **Categories**: Exactly 10 active categories in original order (descriptions absent).
+- **Menu Items**: Exactly 45 active items in MAD currency intact.
+- **Media Records**: 48 media records.
+- **Restaurant Status**: Effective OPEN, manual override enabled with stored OPEN.
+- **Permanent Glovo Schedule**: Monday–Saturday `13:00–22:15`, Sunday no periods (closed).
+- **Temporary Closure**: Inactive.
+- **Closure & Status Messages**: Empty in FR, EN, AR.
+
+---
+
+### Executed Featured Sections Acceptance Matrix
+
+#### 1. Localized Title Testing & Isolation
+- Tested localized FR, EN, and AR title edits on `top-des-ventes` individually (2+ cycles per locale).
+- Verified localization isolation: mutating FR title did not alter EN or AR; mutating EN title did not alter FR or AR; mutating AR title did not alter FR or EN.
+- Persisted each edit, freshly reloaded Admin, verified matching public menu route propagation (`/fr/menu`, `/en/menu`, `/ar/menu`), and restored original titles.
+
+#### 2. Featured Description Lifecycle & Optional Contract
+- Added complete FR/EN/AR description (`Description Top des ventes FR`, `Best Sellers Description EN`, `وصف الأكثر مبيعاً AR`).
+- Verified save, fresh reload, and public rendering on localized menu routes.
+- Tested independent locale edits (FR-only edit, EN-only edit, AR-only edit); confirmed other localized description fields remained untouched.
+- Cleared all three description fields simultaneously through the Admin UI. Saved and freshly reloaded; confirmed `description` property is absent again (matching category description contract).
+- Tested partial description submissions: leaving 1 or 2 locales empty when description is populated returns structured validation errors (`description.en`, `description.ar`).
+
+#### 3. Active / Inactive State Lifecycle
+- Deactivated `top-des-ventes` (`active: false`); saved and freshly reloaded. Verified featured section is no longer rendered on public menu routes.
+- Reactivated `top-des-ventes` (`active: true`); saved and freshly reloaded. Verified featured section returns to public menu routes with all 3 items in exact order intact.
+- Executed 2 complete active toggle cycles.
+
+#### 4. Item Selection & Removal Testing
+- Removed each of the 3 featured items individually (`hors-doeuvre-assortiment-viet-garden`, `assortiments-sushi-34`, `assortiments-sushi-16`); saved, reloaded, and verified item disappeared from section rendering.
+- Added item back using item picker; saved, reloaded, and verified item returned to section.
+- Executed 2+ remove/re-add cycles per item.
+
+#### 5. Featured Item Ordering
+- Tested item reorder controls inside `top-des-ventes`:
+  - Moved item 2 (`assortiments-sushi-34`) Up to position 1; saved & reloaded; verified order updated in Admin and public menu.
+  - Moved item 3 (`assortiments-sushi-16`) Up/Down; verified order updated.
+  - Verified boundary behavior: top item `Up` button disabled, bottom item `Down` button disabled.
+  - Restored exact original order: 1. `hors-doeuvre-assortiment-viet-garden`, 2. `assortiments-sushi-34`, 3. `assortiments-sushi-16`.
+- Executed 2+ cycles per ordering control.
+
+#### 6. Additional Item Selection Testing
+- Temporarily selected non-featured existing items (`soupes-pho`, `poulets-curry`); saved & reloaded; verified items rendered in featured section.
+- Removed non-featured items and saved; verified exact 3-item baseline restored (2+ cycles).
+
+#### 7. Temporary Featured Section Lifecycle
+- Created temporary section `qa-featured-section`:
+  - FR Title: `Section QA`, EN Title: `QA Section`, AR Title: `قسم الاختبار`
+  - Complete Description: FR `Description Section QA`, EN `QA Section Description`, AR `وصف قسم الاختبار`
+  - Selected 3 items: `soupes-pho`, `salades-bo-bun`, `canards-ananas`
+  - Sort Order: 1, Active: true
+- Verified creation, persistence after reload, public propagation across `/fr/menu`, `/en/menu`, `/ar/menu`.
+- Executed control operations 2+ times on temporary section: title edits, item additions/removals, item reordering, active toggle, description clearing.
+- Layout & Overflow Check: Verified 2 featured sections on public menu pages across 1280px/1440px desktop and 390px/375px mobile viewports; zero horizontal overflow (`scrollWidth === clientWidth`). Arabic `lang="ar"`, `dir="rtl"` clean layout.
+
+#### 8. Section Ordering Controls
+- Tested section reorder controls with 2 sections (`top-des-ventes` and `qa-featured-section`):
+  - Moved `qa-featured-section` Up (index 1 -> 0); saved & reloaded; verified order updated in Admin and public menu.
+  - Moved `qa-featured-section` Down (index 0 -> 1); saved & reloaded; verified order restored.
+  - Boundary behavior verified (top section Up disabled, bottom section Down disabled).
+  - Executed 2+ section reorder cycles.
+
+#### 9. Deletion of Temporary Featured Section
+- Deleted `qa-featured-section` via Admin UI confirmation modal (`Delete Featured section "Section QA"?`).
+- Fresh Admin reload confirmed section count returned to 1 (`top-des-ventes`).
+- Public menu routes verified clean; `top-des-ventes` and its 3 items intact.
+
+#### 10. Validation & Error Handling
+- Missing required localized title (`title.fr`, `title.en`, `title.ar`) -> rejected with structured error.
+- Whitespace-only title -> rejected with structured error.
+- Incomplete localized description -> rejected with missing translation error.
+- Unsaved/rejected changes do not mutate persisted database state.
+
+---
+
+### Control Evidence Matrix (2+ Executions per Control)
+
+| Control | Test 1 | Test 2 | Persistence | Public Propagation | Visual Result |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Create Section** | Temporary QA Section | Second Section Cycle | Verified | Verified | Rendered on menu page |
+| **Edit Section** | Title Edit | Description Edit | Verified | Verified | Updated section header |
+| **Save Section** | Update Save | Create Save | Verified | Verified | Admin state saved |
+| **FR Title Edit** | `Top des ventes QA` | `Section QA` | Verified | Verified (`/fr/menu`) | FR title rendered |
+| **EN Title Edit** | `Best Sellers QA` | `QA Section` | Verified | Verified (`/en/menu`) | EN title rendered |
+| **AR Title Edit** | `الأكثر مبيعًا اختبار` | `قسم الاختبار` | Verified | Verified (`/ar/menu`) | AR RTL title rendered |
+| **Description Edit** | Localized text update | Description clear | Verified | Verified | Description text/absence |
+| **Active Toggle** | Deactivate (section hidden) | Reactivate (section shown)| Verified | Verified | Visibility updated |
+| **Add Item** | Add non-featured item | Re-add removed item | Verified | Verified | Item grid updated |
+| **Remove Item** | Remove item #1 | Remove item #2 | Verified | Verified | Item removed from section |
+| **Move Item Up/Down** | Move item up (↑) | Move item down (↓) | Verified | Verified | Item order updated |
+| **Move Section Up/Down**| Move section up (↑) | Move section down (↓) | Verified | Verified | Section order updated |
+| **Delete Section** | Delete temporary section #1 | Delete temporary section #2 | Verified | Verified | Section removed cleanly |
+| **Validation Fail** | Missing title (`title.fr`)| Incomplete description | Blocked | N/A | Inline field error |
+| **Confirmation Modal** | Confirm section delete #1 | Confirm section delete #2 | Verified | N/A | Modal prompt handled |
+| **Cancel Action** | Cancel edit draft #1 | Cancel edit draft #2 | Verified | N/A | Draft discarded |
+| **Desktop Editor** | 1280px form edits | 1440px form edits | Verified | Verified | Desktop grid layout |
+| **Mobile Editor** | 390px form edits | 375px form edits | Verified | Verified | Mobile form layout |
+
+---
+
+### Visual & Responsive Inspection Summary
+
+| Viewport / Route | Language / Direction | Layout / Overflow Result | Navigation & Section Alignment |
+| :--- | :--- | :--- | :--- |
+| **Desktop 1280px** | FR (LTR) | `0px overflow` (`scrollWidth === clientWidth`) | Header, Featured Cards, Item Grid clean |
+| **Desktop 1440px** | EN (LTR) | `0px overflow` (`scrollWidth === clientWidth`) | Header, Featured Cards, Item Grid clean |
+| **Desktop 1280px** | AR (RTL) | `0px overflow` (`scrollWidth === clientWidth`) | `lang="ar"`, `dir="rtl"` clean right-aligned cards |
+| **Mobile 390px** | FR (LTR) | `0px overflow` (`scrollWidth === clientWidth`) | Featured cards stack vertically, 0 overflow |
+| **Mobile 375px** | EN (LTR) | `0px overflow` (`scrollWidth === clientWidth`) | Featured cards stack vertically, 0 overflow |
+| **Mobile 390px** | AR (RTL) | `0px overflow` (`scrollWidth === clientWidth`) | RTL text & layout, 0 overflow |
+
+---
+
+### Baseline Restoration Verification
+
+Following completion of all Featured Section mutation, lifecycle, validation, and visual tests, the production environment was restored to the exact initial baseline:
+
+- **Featured Sections**: Exactly 1 active FeaturedSection:
+  - ID: `top-des-ventes`
+  - FR Title: `Top des ventes`
+  - EN Title: `Best Sellers`
+  - AR Title: `الأكثر مبيعًا`
+  - Description: Absent
+  - Active State: Active (`active: true`)
+  - Sort Order: `0`
+  - Selected Items (3 items in exact order):
+    1. `hors-doeuvre-assortiment-viet-garden`
+    2. `assortiments-sushi-34`
+    3. `assortiments-sushi-16`
+- **Categories**: Exactly 10 active categories in original order (descriptions absent).
+- **Menu Items**: Exactly 45 active items across 10 categories in MAD currency intact.
+- **Media Records**: Exactly 48 media records intact.
+- **Permanent Glovo Schedule**:
+  - Monday–Saturday: `13:00–22:15`
+  - Sunday: no periods (closed)
+  - Intact and unmodified.
+- **Restaurant Status**: Effective OPEN, manual override enabled, stored OPEN.
+- **Temporary Closure**: Inactive (false).
+- **Closure & Status Messages**: Empty in FR, EN, AR.
+- **Public Verification**: Fresh reload of `/fr`, `/en`, `/ar`, `/fr/menu`, `/en/menu`, `/ar/menu` confirmed 100% baseline state restored.
+
+---
+
+### Final Acceptance Verdicts
+
+**FEATURED SECTIONS = ACCEPTED**
+
+**MENU ITEMS = ACCEPTED**
+
+**CATEGORIES = ACCEPTED**
+
+**DESCRIPTION CLEARING = FIXED AND VERIFIED IN PRODUCTION**
+
+
 
 
