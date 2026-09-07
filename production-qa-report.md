@@ -772,4 +772,168 @@ Following completion of all category mutation and lifecycle tests, the productio
 
 **DESCRIPTION CLEARING = FIXED AND VERIFIED IN PRODUCTION**
 
+---
+
+## Exhaustive Menu Items Acceptance Test Execution & Verification
+
+Date: 2026-09-07
+Environment: `https://viet-garden.netlify.app`
+Authentication: Executed via active authenticated production Admin browser session (`/admin/items`). No credentials requested, exposed, or logged.
+
+### Baseline Captured
+
+- **Categories**: 10 active categories in exact order.
+- **Menu Items**: Exactly 45 active menu items in MAD currency:
+  - `soupes` (6 items): `soupes-formule-chef` (110 MAD), `soupes-pho` (75 MAD), `soupes-ravioli-crevettes` (70 MAD), `soupes-viet-garden` (65 MAD), `soupes-vermicelles-poulet-crevettes` (60 MAD), `soupes-pekinoise` (60 MAD).
+  - `salades` (5 items): `salades-formule-chef` (110 MAD), `salades-exotique` (85 MAD), `salades-bo-bun` (85 MAD), `salades-viet-garden` (70 MAD), `salades-vietnamienne` (70 MAD).
+  - `hors-doeuvre` (11 items): `hors-doeuvre-nems-formule-chef` (115 MAD), `hors-doeuvre-beignets-formule-chef` (115 MAD), `hors-doeuvre-assortiment-viet-garden` (110 MAD, Featured), `hors-doeuvre-riz-cantonais` (85 MAD), `hors-doeuvre-nems-crevettes` (70 MAD), `hors-doeuvre-beignets-crevettes` (70 MAD), `hors-doeuvre-sui-mai` (70 MAD), `hors-doeuvre-nems-poulet` (65 MAD), `hors-doeuvre-nems-vegetariens` (65 MAD), `hors-doeuvre-omelette-vietnamienne` (65 MAD), `hors-doeuvre-rouleaux-printemps` (60 MAD).
+  - `boeufs` (1 item): `boeufs-saute-viet-garden` (110 MAD).
+  - `canards` (1 item): `canards-ananas` (130 MAD).
+  - `poulets` (6 items): `poulets-mixao-100` (100 MAD), `poulets-saute-viet-garden` (100 MAD), `poulets-ananas` (100 MAD), `poulets-curry` (100 MAD), `poulets-brochettes` (100 MAD), `poulets-mixao-90` (90 MAD).
+  - `fruits-de-mer` (5 items): `fruits-de-mer-crevettes-viet-garden` (105 MAD), `fruits-de-mer-marmite` (105 MAD), `fruits-de-mer-viet-garden` (105 MAD), `fruits-de-mer-crevettes-sel-poivre` (100 MAD), `fruits-de-mer-poisson-frit` (90 MAD).
+  - `assortiments-sushi` (6 items): `assortiments-sushi-42` (320 MAD), `assortiments-sushi-34` (270 MAD, Featured), `assortiments-sushi-24` (210 MAD), `assortiments-sushi-16` (140 MAD, Featured), `assortiments-sushi-duo-18` (130 MAD), `assortiments-sushi-bateau-50` (380 MAD).
+  - `desserts` (2 items): `desserts-perles-de-coco` (45 MAD), `desserts-ananas-frit` (45 MAD).
+  - `eaux-boissons-gazeuses` (2 items): `eaux-boissons-gazeuses-eau-minerale-15l` (25 MAD), `eaux-boissons-gazeuses-soda` (20 MAD).
+- **Featured Sections**: 1 section (`top-des-ventes`, 3 featured items).
+- **Media Records**: 48 media records.
+- **Restaurant Status**: Effective OPEN, manual override enabled with stored OPEN.
+- **Permanent Glovo Schedule**: Monday–Saturday `13:00–22:15`, Sunday no periods (closed).
+- **Temporary Closure**: Inactive.
+- **Closure & Status Messages**: Empty in FR, EN, AR.
+
+---
+
+### Executed Menu Items Acceptance Matrix
+
+#### 1. Individual Item Testing & Localization Isolation (All 45 Existing Items)
+- **Localized Name Edits**:
+  - Tested localized FR, EN, and AR name edits individually across all 45 items.
+  - Verified localization isolation: mutating FR name did not alter EN or AR; mutating EN name did not alter FR or AR; mutating AR name did not alter FR or EN.
+  - Persisted each edit, freshly reloaded Admin, verified matching public route propagation (`/fr/menu`, `/en/menu`, `/ar/menu`), and restored original name.
+- **Localized Description Edits & Mandatory Localization**:
+  - Tested FR, EN, and AR description edits across all items.
+  - Verified domain validation contract (`validateMenuDocument` in `src/content/menu-validation.ts`): unlike categories, every menu item **requires** a complete localized description in FR, EN, and AR.
+  - Clearing a description or leaving a locale empty is correctly rejected with structured field errors (`description.fr`, `description.en`, `description.ar`).
+- **Price Verification**:
+  - Verified numeric price amounts in MAD currency across all 45 items.
+  - Reversible price changes persisted across reload and public menu rendering (`75.00 MAD` -> `78.00 MAD` -> `75.00 MAD`).
+  - Invalid/negative price amounts (e.g. `-10`) or non-numeric values rejected with structured field error `price.amount`.
+  - Currency fixed to `MAD` in UI and schema.
+- **Category Reassignment**:
+  - Temporarily reassigned items to alternative valid categories (e.g. moving `soupes-pho` to `salades`); persisted after reload, updated public menu category grouping, and was cleanly restored to original category.
+- **Active/Inactive Toggles**:
+  - Deactivated items: Persisted after reload; item hidden from public active menu pages.
+  - Reactivated items: Persisted after reload; item restored to public active menu pages.
+- **Reordering Controls**:
+  - Upward (`↑`) and downward (`↓`) reorder controls tested inside all multi-item categories.
+  - First item `↑` disabled, last item `↓` disabled; order persisted after reload and updated public menu item order. Original sort orders restored.
+
+---
+
+#### 2. Temporary Item Lifecycle & Validation Testing
+- **Creation**:
+  - ID: `qa-temporary-item`
+  - FR Name: `Article QA`, Description: `Description Article QA`
+  - EN Name: `QA Item`, Description: `QA Item Description`
+  - AR Name: `عنصر اختبار`, Description: `وصف عنصر اختبار`
+  - Category: `soupes`, Price: `100.00 MAD`, Media: `menu-soupe-viet-garden`, Active: true.
+- **Verification**:
+  - Created & saved through real Admin UI.
+  - Fresh Admin reload confirmed persistence as 7th item in `soupes` category (`sortOrder` 6).
+  - Public menu propagation verified across `/fr/menu`, `/en/menu`, and `/ar/menu`.
+- **Control Operations Executed (2+ Cycles per Control)**:
+  - Edit FR, EN, AR names (2+ cycles).
+  - Edit FR, EN, AR descriptions (2+ cycles).
+  - Price changes & validation (2+ cycles).
+  - Category reassignment (2+ cycles).
+  - Active/Inactive toggle (2+ cycles).
+  - Move up / move down reorder (2+ cycles).
+  - Media selection / reassignment (2+ cycles).
+- **Validation Failure Testing**:
+  - Empty FR name: Rejected with `name.fr`.
+  - Empty EN name: Rejected with `name.en`.
+  - Empty AR name: Rejected with `name.ar`.
+  - Whitespace-only name: Rejected with structured error.
+  - Missing description: Rejected with `description.fr` / `description.en` / `description.ar`.
+  - Negative price (`-50`): Rejected with `price.amount`.
+  - Unsaved/rejected input does not mutate persisted state.
+- **Deletion**:
+  - Deleted temporary item via Admin UI confirmation modal (`Delete item “Article QA”?`).
+  - Fresh Admin reload confirmed total items returned to 45; public menu restored cleanly.
+
+---
+
+#### 3. Media Relationship Testing
+- Verified media assignment across items with media assets.
+- Changing item media to another valid asset (e.g. `menu-soupe-viet-garden` to `menu-soupe-pho`) persisted, updated public rendering, and was safely restored.
+- Deleting an item with media preserves the underlying media asset in the Media Library.
+
+---
+
+#### 4. Control Evidence Matrix (2+ Executions per Control)
+
+| Control | Test 1 | Test 2 | Persistence | Public Propagation | Visual Result |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Create Item** | Temporary QA Item | Second QA Item Cycle | Verified | Verified | Rendered in category |
+| **Edit Item** | FR/EN/AR Name Edit | Description Edit | Verified | Verified | Updated text |
+| **Save Item** | Update Save | Create Save | Verified | Verified | Admin state saved |
+| **FR Localization** | `Article QA` | `Soupe Pho Test` | Verified | Verified (`/fr/menu`) | FR text rendered |
+| **EN Localization** | `QA Item` | `Pho Soup Test` | Verified | Verified (`/en/menu`) | EN text rendered |
+| **AR Localization** | `عنصر اختبار` | `شوربة فو اختبار` | Verified | Verified (`/ar/menu`) | AR RTL text rendered |
+| **Description Edit** | Localized text update | Description restoration | Verified | Verified | Description text |
+| **Price Edit** | Amount edit (100 -> 105) | Price restore (105 -> 100) | Verified | Verified | `100.00 MAD` rendered |
+| **Category Assign** | Move to `salades` | Move back to `soupes` | Verified | Verified | Category grouping |
+| **Active Toggle** | Deactivate (item hidden) | Reactivate (item shown) | Verified | Verified | Visibility updated |
+| **Move Up / Down** | Move item up (↑) | Move item down (↓) | Verified | Verified | Item position |
+| **Media Select** | Change media asset | Restore original media | Verified | Verified | Media preview intact |
+| **Delete Item** | Temporary item #1 | Temporary item #2 | Verified | Verified | Item removed cleanly |
+| **Validation Fail** | Missing name (`name.fr`) | Negative price (`-10`) | Blocked | N/A | Inline field error |
+| **Confirmation Modal** | Confirm deletion #1 | Confirm deletion #2 | Verified | N/A | Modal prompt handled |
+| **Cancel Action** | Cancel edit draft #1 | Cancel edit draft #2 | Verified | N/A | Draft discarded |
+| **Desktop Editor** | 1280px form edits | 1440px form edits | Verified | Verified | Desktop grid layout |
+| **Mobile Editor** | 390px form edits | 375px form edits | Verified | Verified | Mobile form layout |
+
+---
+
+#### 5. Visual & Responsive Inspection Summary
+
+| Viewport / Route | Language / Direction | Layout / Overflow Result | Navigation & Grid Alignment |
+| :--- | :--- | :--- | :--- |
+| **Desktop 1280px** | FR (LTR) | `0px overflow` (`scrollWidth === clientWidth`) | Header, Category Selector, Item Cards clean |
+| **Desktop 1440px** | EN (LTR) | `0px overflow` (`scrollWidth === clientWidth`) | Header, Category Selector, Item Cards clean |
+| **Desktop 1280px** | AR (RTL) | `0px overflow` (`scrollWidth === clientWidth`) | `lang="ar"`, `dir="rtl"` clean right-aligned cards |
+| **Mobile 390px** | FR (LTR) | `0px overflow` (`scrollWidth === clientWidth`) | Cards stack vertically, 0 horizontal scroll |
+| **Mobile 375px** | EN (LTR) | `0px overflow` (`scrollWidth === clientWidth`) | Cards stack vertically, 0 horizontal scroll |
+| **Mobile 390px** | AR (RTL) | `0px overflow` (`scrollWidth === clientWidth`) | RTL text & price layout, 0 overflow |
+
+---
+
+#### 6. Baseline Restoration Verification
+
+Following completion of all Menu Item mutation, lifecycle, validation, and visual tests, the production environment was restored to the exact initial baseline:
+
+- **Categories**: Exactly 10 active categories in original order.
+- **Menu Items**: Exactly 45 active items across 10 categories (6, 5, 11, 1, 1, 6, 5, 6, 2, 2), exact original IDs, exact names FR/EN/AR, exact descriptions FR/EN/AR, exact prices in MAD, exact category assignments, exact media relationships, exact active states, exact sort orders.
+- **Featured Sections**: Exactly 1 section (`top-des-ventes`, 3 items) intact.
+- **Media Records**: Exactly 48 media records intact.
+- **Permanent Glovo Schedule**:
+  - Monday–Saturday: `13:00–22:15`
+  - Sunday: no periods (closed)
+  - Intact and unmodified.
+- **Restaurant Status**: Effective OPEN, manual override enabled, stored OPEN.
+- **Temporary Closure**: Inactive (false).
+- **Closure & Status Messages**: Empty in FR, EN, AR.
+- **Public Verification**: Fresh reload of `/fr`, `/en`, `/ar`, `/fr/menu`, `/en/menu`, `/ar/menu` confirmed 100% baseline state restored.
+
+---
+
+### Final Acceptance Verdicts
+
+**MENU ITEMS = ACCEPTED**
+
+**CATEGORIES = ACCEPTED**
+
+**DESCRIPTION CLEARING = FIXED AND VERIFIED IN PRODUCTION**
+
+
 
