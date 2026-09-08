@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { localizedText, type Locale, type MediaAsset } from '../content/models';
 import { localizedPathname, restaurantProfile, routeHref, siteNavigation, languageLabels } from '../content/restaurant';
 
-function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash, onSelect }: { localeOptions: Locale[]; currentLocale: Locale; pathname: string | null; currentHash: string; onSelect: () => void }) {
+function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash }: { localeOptions: Locale[]; currentLocale: Locale; pathname: string | null; currentHash: string }) {
   return (
     <details className="language-menu">
       <summary className="language-menu-trigger" aria-label={localizedText({ fr: 'Changer de langue', en: 'Change language', ar: 'تغيير اللغة' }, currentLocale)}>
@@ -22,7 +22,6 @@ function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash,
             href={localizedPathname(option, pathname, currentHash)}
             className={option === currentLocale ? 'language-option is-active' : 'language-option'}
             aria-current={option === currentLocale ? 'true' : undefined}
-            onClick={onSelect}
           >
             <span>{option.toUpperCase()}</span>
             <small>{localizedText(languageLabels[option], currentLocale)}</small>
@@ -43,9 +42,7 @@ export function SiteShell({ locale, logo, children }: { locale: Locale; logo?: M
   const menuLabel = localizedText({ fr: 'Menu', en: 'Menu', ar: 'القائمة' }, currentLocale);
   const glovoOrder = restaurantProfile.ordering.find((order) => order.source === 'glovo');
   const closeMenu = () => {
-    window.setTimeout(() => {
-      if (menuRef.current) menuRef.current.open = false;
-    }, 0);
+    if (menuRef.current) menuRef.current.open = false;
   };
 
   const renderNavigation = (navigationId: string, className: string) => (
@@ -57,19 +54,19 @@ export function SiteShell({ locale, logo, children }: { locale: Locale; logo?: M
       {siteNavigation.map((item) => {
         const href = item.route === 'home' ? `/${currentLocale}` : routeHref(currentLocale, item.route);
         return (
-          <Link key={item.route} href={href} className="nav-link" onClick={closeMenu}>
+          <Link key={item.route} href={href} className="nav-link">
             {localizedText(item.label, currentLocale)}
           </Link>
         );
       })}
 
       {glovoOrder ? (
-        <a href={glovoOrder.url} target="_blank" rel="noreferrer" className="nav-order-link" onClick={closeMenu}>
+        <a href={glovoOrder.url} className="nav-order-link">
           {localizedText(glovoOrder.label, currentLocale)}
         </a>
       ) : null}
 
-      <LanguageSwitcher localeOptions={localeOptions} currentLocale={currentLocale} pathname={pathname} currentHash={currentHash} onSelect={closeMenu} />
+      <LanguageSwitcher localeOptions={localeOptions} currentLocale={currentLocale} pathname={pathname} currentHash={currentHash} />
     </nav>
   );
 
