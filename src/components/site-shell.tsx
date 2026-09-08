@@ -43,7 +43,9 @@ export function SiteShell({ locale, logo, children }: { locale: Locale; logo?: M
   const menuLabel = localizedText({ fr: 'Menu', en: 'Menu', ar: 'القائمة' }, currentLocale);
   const glovoOrder = restaurantProfile.ordering.find((order) => order.source === 'glovo');
   const closeMenu = () => {
-    if (menuRef.current) menuRef.current.open = false;
+    window.setTimeout(() => {
+      if (menuRef.current) menuRef.current.open = false;
+    }, 0);
   };
 
   const renderNavigation = (navigationId: string, className: string) => (
