@@ -4,6 +4,7 @@ import { homepageHero, homepageIdentity, restaurantProfile, routeHref } from '..
 import { localizedText, locales, type Locale } from '../../content/models';
 import { createMenuRepository } from '../../content/menu-repository';
 import { PublicRestaurantStatus } from '../../components/public-restaurant-status';
+import { PublicWeeklySchedule } from '../../components/public-weekly-schedule';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,6 +75,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <p className="identity-location">{localizedText(homepageIdentity.location, locale)}</p>
         </div>
       </section>
+
+      <section className="schedule-section" aria-labelledby="schedule-section-title">
+        <PublicWeeklySchedule availability={menu.availability} locale={locale} />
+      </section>
     </main>
   );
 }
+
