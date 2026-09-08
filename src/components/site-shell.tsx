@@ -54,9 +54,9 @@ export function SiteShell({ locale, logo, children }: { locale: Locale; logo?: M
       {siteNavigation.map((item) => {
         const href = item.route === 'home' ? `/${currentLocale}` : routeHref(currentLocale, item.route);
         return (
-          <Link key={item.route} href={href} className="nav-link">
+          <a key={item.route} href={href} className="nav-link">
             {localizedText(item.label, currentLocale)}
-          </Link>
+          </a>
         );
       })}
 
