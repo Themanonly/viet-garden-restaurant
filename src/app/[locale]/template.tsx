@@ -21,7 +21,8 @@ export default async function LocaleTemplate({
   const settings = createBrandSettingsRepository();
   const mediaRepository = createMediaRepository();
   const logo = await mediaRepository.getMedia(await settings.getBrandLogoMediaId());
+  const media = await mediaRepository.listMedia();
   const profile = await createRestaurantProfileRepository().getProfile();
 
-  return <SiteShell locale={locale} logo={logo} profile={profile}>{children}</SiteShell>;
+  return <SiteShell locale={locale} logo={logo} profile={profile} media={media}>{children}</SiteShell>;
 }
