@@ -8,13 +8,18 @@ import { validateUploadedMedia } from './media-upload-storage';
 
 const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
 const mp4 = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112, 105, 115, 111, 109, 0, 0, 0, 1]);
+const pdf = Buffer.from('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+const mp3 = Buffer.from('ID3\x03\x00\x00\x00\x00\x00');
 const alt = { fr: 'Upload test', en: 'Upload test', ar: 'اختبار الرفع' };
 
 test('upload validation accepts supported signatures and rejects unsafe types', () => {
   assert.equal(validateUploadedMedia(png, 'image', 'png').extension, 'png');
   assert.equal(validateUploadedMedia(mp4, 'video', 'mp4').type, 'video');
+  assert.equal(validateUploadedMedia(new Uint8Array(pdf), 'pdf', 'pdf').type, 'pdf');
+  assert.equal(validateUploadedMedia(new Uint8Array(mp3), 'audio', 'mp3').type, 'audio');
   assert.throws(() => validateUploadedMedia(new Uint8Array([1, 2, 3]), 'image', 'png'), /content does not match/);
   assert.throws(() => validateUploadedMedia(png, 'image', 'svg'), /Unsupported/);
+  assert.throws(() => validateUploadedMedia(new Uint8Array([0x7f, 0x45, 0x4c, 0x46]), 'other', 'exe'), /Unsupported/);
 });
 
 test('uploaded binaries persist, replace by stable ID, and delete with metadata', async () => {

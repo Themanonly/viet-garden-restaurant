@@ -33,12 +33,35 @@ function defaultClient(): SupabaseStorageHttpClient {
 }
 
 function contentTypeFor(extension: string): string {
-  return ({ jpg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', mp4: 'video/mp4' } as Record<string, string>)[extension] ?? 'application/octet-stream';
+  return ({
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    mp4: 'video/mp4',
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    aac: 'audio/aac',
+    ogg: 'audio/ogg',
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    txt: 'text/plain',
+    rtf: 'application/rtf',
+    csv: 'text/csv',
+    json: 'application/json',
+    md: 'text/markdown',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  } as Record<string, string>)[extension] ?? 'application/octet-stream';
 }
 
 function safeKey(storageKey: string): string {
   const normalized = storageKey.replace(/\\/g, '/');
-  if (normalized !== storageKey || !/^uploads\/[a-f0-9-]+\.(jpg|png|gif|webp|mp4)$/.test(normalized)) throw new Error('Invalid managed Supabase media storage key.');
+  if (normalized !== storageKey || !/^uploads\/[a-f0-9-]+\.(jpg|png|gif|webp|mp4|mp3|wav|aac|ogg|pdf|doc|docx|txt|rtf|csv|json|md|ppt|pptx|xls|xlsx)$/.test(normalized)) throw new Error('Invalid managed Supabase media storage key.');
   return normalized;
 }
 

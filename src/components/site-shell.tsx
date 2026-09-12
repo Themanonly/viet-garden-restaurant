@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { localizedText, type Locale, type MediaAsset } from '../content/models';
+import { localizedText, type Locale, type MediaAsset, type RestaurantProfile } from '../content/models';
 import { localizedPathname, restaurantProfile, routeHref, siteNavigation, languageLabels } from '../content/restaurant';
 
 function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash }: { localeOptions: Locale[]; currentLocale: Locale; pathname: string | null; currentHash: string }) {
@@ -32,7 +32,7 @@ function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash 
   );
 }
 
-export function SiteShell({ locale, logo, children }: { locale: Locale; logo?: MediaAsset; children: ReactNode }) {
+export function SiteShell({ locale, logo, profile, children }: { locale: Locale; logo?: MediaAsset; profile?: RestaurantProfile; children: ReactNode }) {
   const localeOptions: Locale[] = ['fr', 'en', 'ar'];
   const pathname = usePathname();
   const pathLocale = pathname?.split('/')[1] as Locale | undefined;
@@ -40,7 +40,8 @@ export function SiteShell({ locale, logo, children }: { locale: Locale; logo?: M
   const [currentHash, setCurrentHash] = useState('');
   const menuRef = useRef<HTMLDetailsElement>(null);
   const menuLabel = localizedText({ fr: 'Menu', en: 'Menu', ar: 'القائمة' }, currentLocale);
-  const glovoOrder = restaurantProfile.ordering.find((order) => order.source === 'glovo');
+  const managedProfile = profile ?? restaurantProfile;
+  const primaryOrder = managedProfile.orderingChannels.filter((channel) => channel.enabled).sort((first, second) => first.sortOrder - second.sortOrder)[0];
   const closeMenu = () => {
     if (menuRef.current) menuRef.current.open = false;
   };
@@ -60,9 +61,9 @@ export function SiteShell({ locale, logo, children }: { locale: Locale; logo?: M
         );
       })}
 
-      {glovoOrder ? (
-        <a href={glovoOrder.url} className="nav-order-link">
-          {localizedText(glovoOrder.label, currentLocale)}
+      {primaryOrder ? (
+        <a href={primaryOrder.url} className="nav-order-link">
+          {localizedText(primaryOrder.ctaText ?? primaryOrder.name, currentLocale)}
         </a>
       ) : null}
 
@@ -89,7 +90,7 @@ export function SiteShell({ locale, logo, children }: { locale: Locale; logo?: M
     <>
       <header className="site-header">
         <div className="shell-frame header-inner">
-          <Link href={`/${currentLocale}`} className="brand" aria-label={localizedText(restaurantProfile.name, currentLocale)}>
+          <Link href={`/${currentLocale}`} className="brand" aria-label={localizedText(managedProfile.name, currentLocale)}>
             {logo ? <img className="brand-logo-image" src={logo.reference} alt={localizedText(logo.alt, currentLocale)} /> : null}
           </Link>
 
@@ -118,36 +119,32 @@ export function SiteShell({ locale, logo, children }: { locale: Locale; logo?: M
             <div className="brand brand-footer">
               {logo ? <img className="brand-logo-image" src={logo.reference} alt={localizedText(logo.alt, currentLocale)} /> : null}
             </div>
-            <p className="footer-copy">{localizedText(restaurantProfile.description, currentLocale)}</p>
+            <p className="footer-copy">{localizedText(managedProfile.description, currentLocale)}</p>
           </div>
 
           <div className="footer-column">
             <p className="footer-label">{localizedText({ fr: 'Contact', en: 'Contact', ar: 'اتصل بنا' }, currentLocale)}</p>
-            {restaurantProfile.phoneNumbers.filter((phone) => phone.enabled).map((phone) => (
-              <a key={phone.id} href={`tel:${phone.dialable}`} className="footer-link">
-                {localizedText(phone.label, currentLocale)}
+            {managedProfile.contacts.filter((contact) => contact.enabled).sort((first, second) => first.sortOrder - second.sortOrder).map((contact) => (
+              <a key={contact.id} href={contact.type === 'phone' || contact.type === 'fax' ? `tel:${contact.value}` : contact.type === 'whatsapp' ? `https://wa.me/${contact.value.replace(/\D/g, '')}` : contact.type === 'email' ? `mailto:${contact.value}` : contact.value} className="footer-link">
+                {contact.displayValue ?? localizedText(contact.label, currentLocale)}
               </a>
             ))}
-            {restaurantProfile.socialLinks.filter((profile) => profile.enabled).map((profile) => (
-              <a key={profile.id} href={profile.url} target="_blank" rel="noreferrer" className="footer-link">
-                {localizedText(profile.label, currentLocale)}
+            {managedProfile.socialLinks.filter((social) => social.enabled).sort((first, second) => first.sortOrder - second.sortOrder).map((social) => (
+              <a key={social.id} href={social.url} target="_blank" rel="noreferrer" className="footer-link">
+                {localizedText(social.label, currentLocale)}
               </a>
             ))}
           </div>
 
           <div className="footer-column">
             <p className="footer-label">{localizedText({ fr: 'Nous trouver', en: 'Find Us', ar: 'موقعنا' }, currentLocale)}</p>
-            <a href={restaurantProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link">
-              {localizedText(restaurantProfile.address, currentLocale)}
+            <a href={managedProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link">
+              {localizedText(managedProfile.address, currentLocale)}
             </a>
-            <a href={restaurantProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-link-strong">
+            <a href={managedProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-link-strong">
               {localizedText({ fr: 'Google Maps', en: 'Google Maps', ar: 'خرائط Google' }, currentLocale)}
             </a>
-            {restaurantProfile.ordering.filter((order) => order.source === 'glovo').map((order) => (
-              <a key={order.url} href={order.url} target="_blank" rel="noreferrer" className="footer-link footer-link-strong">
-                {localizedText(order.label, currentLocale)}
-              </a>
-            ))}
+            {primaryOrder ? <a href={primaryOrder.url} target="_blank" rel="noreferrer" className="footer-link footer-link-strong">{localizedText(primaryOrder.ctaText ?? primaryOrder.name, currentLocale)}</a> : null}
           </div>
         </div>
       </footer>

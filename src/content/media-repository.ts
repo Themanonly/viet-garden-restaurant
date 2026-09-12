@@ -35,8 +35,13 @@ export function validateMediaAsset(asset: MediaAsset): string[] {
   const errors: string[] = [];
   if (!asset.id.trim()) errors.push('Media assets require a stable ID.');
   if (!asset.reference.trim()) errors.push(`Media asset requires a reference: ${asset.id}.`);
-  if (!asset.alt.fr?.trim()) errors.push(`Media asset requires French alt text: ${asset.id}.`);
+  if (!['image', 'video', 'audio', 'pdf', 'document', 'other'].includes(asset.type)) errors.push(`Unsupported media type: ${asset.id}.`);
+  if (asset.type === 'image' || asset.type === 'video' || asset.type === 'audio' || asset.type === 'pdf' || asset.type === 'document' || asset.type === 'other') {
+    if (!asset.alt || typeof asset.alt !== 'object') errors.push(`Media asset requires alt text metadata: ${asset.id}.`);
+    else if (!asset.alt.fr?.trim() && !asset.alt.en?.trim() && !asset.alt.ar?.trim()) errors.push(`Media asset requires alt text: ${asset.id}.`);
+  }
   if (!Number.isFinite(asset.sortOrder) || asset.sortOrder < 0) errors.push(`Invalid media ordering: ${asset.id}.`);
+  if (asset.fileSize !== undefined && (!Number.isFinite(asset.fileSize) || asset.fileSize < 0)) errors.push(`Invalid media file size: ${asset.id}.`);
   return errors;
 }
 

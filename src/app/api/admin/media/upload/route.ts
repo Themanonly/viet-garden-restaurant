@@ -8,12 +8,28 @@ import type { AdminUiMediaCreateInput, AdminUiMediaReplacementInput } from '../.
 
 export const runtime = 'nodejs';
 
-const extensionByType: Record<string, { type: UploadedMediaType; extension: 'jpg' | 'png' | 'gif' | 'webp' | 'mp4' }> = {
+const extensionByType: Record<string, { type: UploadedMediaType; extension: string }> = {
   'image/jpeg': { type: 'image', extension: 'jpg' },
   'image/png': { type: 'image', extension: 'png' },
   'image/gif': { type: 'image', extension: 'gif' },
   'image/webp': { type: 'image', extension: 'webp' },
   'video/mp4': { type: 'video', extension: 'mp4' },
+  'audio/mpeg': { type: 'audio', extension: 'mp3' },
+  'audio/wav': { type: 'audio', extension: 'wav' },
+  'audio/aac': { type: 'audio', extension: 'aac' },
+  'audio/ogg': { type: 'audio', extension: 'ogg' },
+  'application/pdf': { type: 'pdf', extension: 'pdf' },
+  'application/msword': { type: 'document', extension: 'doc' },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { type: 'document', extension: 'docx' },
+  'text/plain': { type: 'document', extension: 'txt' },
+  'application/rtf': { type: 'document', extension: 'rtf' },
+  'text/csv': { type: 'document', extension: 'csv' },
+  'application/json': { type: 'document', extension: 'json' },
+  'text/markdown': { type: 'document', extension: 'md' },
+  'application/vnd.ms-powerpoint': { type: 'document', extension: 'ppt' },
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': { type: 'document', extension: 'pptx' },
+  'application/vnd.ms-excel': { type: 'document', extension: 'xls' },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { type: 'document', extension: 'xlsx' },
 };
 
 function failure(code: string, message: string, field?: string): AdminErrorInfo {
@@ -48,9 +64,17 @@ export async function POST(request: Request) {
     const fileEntry = form.get('file');
     if (!(fileEntry instanceof File)) return jsonResponse({ ok: false, error: failure('media-file-required', 'Select an image or MP4 video file.', 'file') }, 400);
     const descriptor = extensionByType[fileEntry.type];
-    if (!descriptor) return jsonResponse({ ok: false, error: failure('unsupported-media-type', 'Only JPEG, PNG, GIF, WebP, and MP4 files are supported.', 'file') }, 415);
+    if (!descriptor) return jsonResponse({ ok: false, error: failure('unsupported-media-type', 'Only safe image, video, audio, PDF, and document files are supported.', 'file') }, 415);
     const filenameExtension = fileEntry.name.toLowerCase().split('.').pop();
-    const validExtensions = descriptor.type === 'image' ? (descriptor.extension === 'jpg' ? ['jpg', 'jpeg'] : [descriptor.extension]) : ['mp4'];
+    const validExtensions = descriptor.type === 'image'
+      ? (descriptor.extension === 'jpg' ? ['jpg', 'jpeg'] : [descriptor.extension])
+      : descriptor.type === 'video'
+        ? ['mp4']
+        : descriptor.type === 'audio'
+          ? ['mp3', 'wav', 'aac', 'ogg']
+          : descriptor.type === 'pdf'
+            ? ['pdf']
+            : ['doc', 'docx', 'txt', 'rtf', 'csv', 'json', 'md', 'ppt', 'pptx', 'xls', 'xlsx'];
     if (!filenameExtension || !validExtensions.includes(filenameExtension)) return jsonResponse({ ok: false, error: failure('unsupported-media-extension', 'The file extension does not match the supported media type.', 'file') }, 415);
     const bytes = new Uint8Array(await fileEntry.arrayBuffer());
     const upload = validateUploadedMedia(bytes, descriptor.type, descriptor.extension);

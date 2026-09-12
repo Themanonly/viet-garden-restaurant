@@ -9,19 +9,19 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function categoryInput(id: string): AdminCategoryCreateInput {
+function categoryInput(id?: string): AdminCategoryCreateInput {
   return {
-    id,
-    name: { fr: `Catégorie ${id}`, en: `Category ${id}`, ar: `الفئة ${id}` },
+    ...(id ? { id } : {}),
+    name: { fr: `Catégorie ${id ?? 'new'}`, en: `Category ${id ?? 'new'}`, ar: `الفئة ${id ?? 'new'}` },
     active: true,
   };
 }
 
-function itemInput(id: string): AdminMenuItemCreateInput {
+function itemInput(id?: string): AdminMenuItemCreateInput {
   return {
-    id,
+    ...(id ? { id } : {}),
     categoryId: 'soupes',
-    name: { fr: `Article ${id}`, en: `Item ${id}`, ar: `العنصر ${id}` },
+    name: { fr: `Article ${id ?? 'new'}`, en: `Item ${id ?? 'new'}`, ar: `العنصر ${id ?? 'new'}` },
     description: { fr: 'Description', en: 'Description', ar: 'الوصف' },
     price: { amount: 12, currency: 'MAD' },
     active: true,
@@ -47,8 +47,8 @@ async function expectFieldError(action: Promise<unknown>, path: string): Promise
 
 test('Admin category creation reaches the domain service', async () => {
   const { service } = serviceWithRepository();
-  const created = await service.createCategory(categoryInput('admin-category'));
-  assert.equal(created.id, 'admin-category');
+  const created = await service.createCategory(categoryInput());
+  assert.match(created.id, /^category-/);
 });
 
 test('Admin invalid category creation returns a structured validation error atomically', async () => {
@@ -93,9 +93,9 @@ test('Admin category descriptions support complete edits and clearing back to ab
 
 test('Admin item creation and update use domain mutations', async () => {
   const { service } = serviceWithRepository();
-  const created = await service.createItem(itemInput('admin-item'));
-  assert.equal(created.id, 'admin-item');
-  const updated = await service.updateItem('admin-item', { active: false, price: { amount: 20, currency: 'MAD' } });
+  const created = await service.createItem(itemInput());
+  assert.match(created.id, /^item-/);
+  const updated = await service.updateItem(created.id, { active: false, price: { amount: 20, currency: 'MAD' } });
   assert.equal(updated.active, false);
   assert.equal(updated.price.amount, 20);
 });
@@ -114,16 +114,15 @@ test('Admin item validation exposes price and category field paths', async () =>
 test('Admin FeaturedSection mutations work through the facade', async () => {
   const { service } = serviceWithRepository();
   const created = await service.createFeaturedSection({
-    id: 'admin-featured',
     title: { fr: 'Sélection', en: 'Selection', ar: 'اختيار' },
     itemIds: ['soupes-pho'],
     active: true,
   });
-  assert.equal(created.id, 'admin-featured');
-  const updated = await service.updateFeaturedSection('admin-featured', { active: false });
+  assert.match(created.id, /^featured-/);
+  const updated = await service.updateFeaturedSection(created.id, { active: false });
   assert.equal(updated.active, false);
-  await service.deleteFeaturedSection('admin-featured');
-  assert.equal((await service.listFeaturedSections()).some((section) => section.id === 'admin-featured'), false);
+  await service.deleteFeaturedSection(created.id);
+  assert.equal((await service.listFeaturedSections()).some((section) => section.id === created.id), false);
 });
 
 test('Admin media removal is safe and does not expose raw repository methods', async () => {

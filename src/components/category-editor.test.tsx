@@ -41,11 +41,21 @@ test('category drafts preserve localized names, optional descriptions, and activ
   assert.match(markup, /dir="rtl"/);
 });
 
+test('create and edit editors use clear context and hide automatic IDs from normal editing', () => {
+  const createMarkup = renderToStaticMarkup(<CategoryEditor adapter={{} as never} draft={createCategoryDraft()} editingId={null} state="ready" onDraftChange={() => undefined} onCancel={() => undefined} onSaved={() => undefined} onError={() => undefined} />);
+  const editMarkup = renderToStaticMarkup(<CategoryEditor adapter={{} as never} draft={{ id: 'first', name: categories[0].name, description: categories[0].description ?? {}, active: true }} editingId="first" state="ready" onDraftChange={() => undefined} onCancel={() => undefined} onSaved={() => undefined} onError={() => undefined} />);
+
+  assert.match(createMarkup, /Create category/);
+  assert.doesNotMatch(createMarkup, /Category ID/);
+  assert.match(editMarkup, /Edit category/);
+  assert.doesNotMatch(editMarkup, /Category ID/);
+});
+
 test('create and edit delegate through the adapter methods', async () => {
   const draft = { id: 'new-category', name: { fr: 'Nouveau', en: 'New', ar: 'جديد' }, description: {}, active: true };
   let created = false;
   let updated = false;
-  const adapter = { createCategory: async (input: typeof draft) => { created = input.id === 'new-category'; return categories[0]; }, updateCategory: async (id: string) => { updated = id === 'first'; return categories[0]; } } as never;
+  const adapter = { createCategory: async (input: Omit<typeof draft, 'id'>) => { created = !('id' in input); return categories[0]; }, updateCategory: async (id: string) => { updated = id === 'first'; return categories[0]; } } as never;
   await saveCategory(adapter, draft, null);
   await saveCategory(adapter, { ...draft, id: 'first' }, 'first');
   assert.equal(created, true);

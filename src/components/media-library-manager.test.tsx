@@ -3,7 +3,7 @@ import test from 'node:test';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import type { AdminUiCategoryDto, AdminUiError, AdminUiMediaDto, AdminUiMenuItemDto } from '../content/admin-menu-ui-adapter';
-import { confirmMediaDeletion, getMediaActiveUpdate, getMediaAltText, getMediaUsageLabel, MediaEditor, MediaErrorSummary, MediaList } from './media-library-manager';
+import { confirmMediaDeletion, filterMediaAssets, getMediaActiveUpdate, getMediaAltText, getMediaUsageLabel, MediaEditor, MediaErrorSummary, MediaList } from './media-library-manager';
 
 const category: AdminUiCategoryDto = { id: 'soupes', name: { fr: 'Soupes', en: 'Soups', ar: 'الشوربات' }, description: {}, sortOrder: 0, active: true };
 const item: AdminUiMenuItemDto = { id: 'soupes-pho', categoryId: 'soupes', name: { fr: 'Soupe pho', en: 'Pho soup', ar: 'حساء فو' }, description: {}, price: { amount: 75, currency: 'MAD' }, mediaId: 'used-image', sortOrder: 0, active: true };
@@ -21,13 +21,19 @@ test('media helpers expose usage, visibility, and explicit confirmation', () => 
   assert.equal(confirmMediaDeletion(asset('unused-image', 0), (message) => message.includes('unused-image')), true);
 });
 
-test('media list renders previews, references, usage names, and blocks referenced deletion', () => {
+test('media list renders previews, usage names, and blocks referenced deletion', () => {
   const markup = renderToStaticMarkup(<MediaList media={[asset('used-image', 1), asset('unused-image', 0)]} itemById={new Map([[item.id, item]])} categoryById={new Map([[category.id, category]])} managerState="ready" onEdit={noop} onDelete={noop} onToggleVisible={noop} />);
   assert.match(markup, /Soupe pho/);
   assert.match(markup, /Soupes/);
-  assert.match(markup, /Nothing currently references this asset/);
+  assert.match(markup, /Not currently used/);
   assert.match(markup, /disabled=""/);
-  assert.match(markup, /https:\/\/example\.com\/unused-image-with-a-very-long-reference-path/);
+});
+
+test('media filtering keeps the list simple and business-friendly', () => {
+  const list = [asset('used-image', 1), asset('unused-image', 0)];
+  assert.equal(filterMediaAssets(list, 'used', 'all').length, 1);
+  assert.equal(filterMediaAssets(list, '', 'video').length, 0);
+  assert.equal(filterMediaAssets(list, 'unused', 'image').length, 1);
 });
 
 test('media editor preserves stable ID for replacement and exposes supported fields', () => {

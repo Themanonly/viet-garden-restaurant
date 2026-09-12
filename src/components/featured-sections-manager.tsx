@@ -12,6 +12,7 @@ import type {
 } from '../content/admin-menu-ui-adapter';
 import type { AdminActionResult } from '../content/admin-menu-actions';
 import { unwrapAdminAction } from '../content/admin-action-client';
+import { DestructiveActionDialog } from './destructive-action-dialog';
 import { LocalizedFieldGroup } from './localized-field-group';
 
 type FeaturedManagerState = 'loading' | 'ready' | 'saving' | 'saved' | 'validation-error' | 'error';
@@ -116,6 +117,8 @@ export function FeaturedSectionsManager({ adapter, serverActions }: FeaturedSect
   const [editingId, setEditingId] = useState<string | null>(null);
   const [managerState, setManagerState] = useState<FeaturedManagerState>('loading');
   const [error, setError] = useState<AdminUiError | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUiFeaturedSectionDto | null>(null);
+  const [deleteState, setDeleteState] = useState<'idle' | 'submitting'>('idle');
 
   const load = async () => {
     setManagementState(await operations.getManagementState());
@@ -149,7 +152,6 @@ export function FeaturedSectionsManager({ adapter, serverActions }: FeaturedSect
         });
       } else {
         await operations.createFeaturedSection({
-          id: draft.id.trim(),
           title: clone(draft.title),
           description: Object.keys(draft.description ?? {}).length ? clone(draft.description) : undefined,
           itemIds: [...draft.itemIds],
@@ -169,16 +171,23 @@ export function FeaturedSectionsManager({ adapter, serverActions }: FeaturedSect
   };
 
   const deleteSection = async (section: AdminUiFeaturedSectionDto) => {
-    if (!confirmFeaturedSectionDeletion(section, (message) => window.confirm(message))) return;
+    setDeleteTarget(section);
+  };
+  const confirmDeleteSection = async () => {
+    if (!deleteTarget) return;
+    setDeleteState('submitting');
     setManagerState('saving');
     setError(null);
     try {
-      await operations.deleteFeaturedSection(section.id);
+      await operations.deleteFeaturedSection(deleteTarget.id);
+      setDeleteTarget(null);
       await load();
       setManagerState('saved');
     } catch (nextError) {
       setError(errorFromUnknown(nextError));
       setManagerState('error');
+    } finally {
+      setDeleteState('idle');
     }
   };
 
@@ -218,6 +227,7 @@ export function FeaturedSectionsManager({ adapter, serverActions }: FeaturedSect
     <div className="admin-list-toolbar"><div><p className="admin-eyebrow">Editorial highlights</p><p className="admin-list-count">{sections.length} Featured sections</p></div><button type="button" className="admin-primary-button" onClick={openCreate}>Create Featured</button></div>
     {sections.length === 0 ? <p className="admin-empty-state">No Featured sections found.</p> : <FeaturedSectionList sections={sections} managerState={managerState} onMove={reorderSection} onEdit={openEdit} onDelete={deleteSection} onToggle={toggleActive} />}
     {draft ? <FeaturedSectionEditor draft={draft} editingId={editingId} items={items} categories={categories} state={managerState} errors={errors} onChange={(nextDraft) => { setDraft(nextDraft); setManagerState('ready'); setError(null); }} onCancel={closeEditor} onSave={save} /> : null}
+    {deleteTarget ? <DestructiveActionDialog open title="Delete this featured section?" description={`This removes “${getFeaturedSectionTitle(deleteTarget)}” from the featured highlights.`} warning="This action cannot be undone." confirmLabel="Delete section" isSubmitting={deleteState === 'submitting'} onCancel={() => { setDeleteTarget(null); setDeleteState('idle'); }} onConfirm={confirmDeleteSection} /> : null}
   </div>;
 }
 
@@ -248,7 +258,7 @@ export function FeaturedSectionEditor({ draft, editingId, items, categories, sta
   return <form className="admin-featured-editor" ref={editorRef} tabIndex={-1} onSubmit={(event) => { event.preventDefault(); onSave(); }}>
     <div className="admin-editor-heading"><div><p className="admin-eyebrow">{editingId ? 'Edit Featured section' : 'New Featured section'}</p><h2>{editingId ? 'Update Featured section' : 'Create Featured section'}</h2></div><button type="button" className="admin-text-button" onClick={onCancel}>Cancel</button></div>
     {errors.id?.length ? <p className="admin-field-error">{errors.id.join(' ')}</p> : null}
-    {!editingId ? <div className="admin-field"><label htmlFor="featured-id">Featured section ID</label><input id="featured-id" value={draft.id} required onChange={(event) => onChange({ ...draft, id: event.target.value })} aria-invalid={Boolean(errors.id?.length)} />{errors.id?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}</div> : null}
+    {!editingId ? <div className="admin-field admin-field-hint"><label htmlFor="featured-id">Featured section ID</label><p id="featured-id" className="admin-field-hint-text">Generated automatically when the section is saved.</p>{errors.id?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}</div> : null}
     <LocalizedFieldGroup id="title" label="Title" value={draft.title} errors={errors} onChange={(locale, value) => updateLocalized('title', locale, value)} />
     <LocalizedFieldGroup id="description" label="Description (optional)" value={draft.description ?? {}} errors={errors} onChange={(locale, value) => updateLocalized('description', locale, value)} />
     <div className="admin-featured-editor-fields"><label className="admin-checkbox-label"><input type="checkbox" checked={draft.active} onChange={(event) => onChange({ ...draft, active: event.target.checked })} /> Active</label><div className="admin-field"><label htmlFor="featured-sort-order">Sort order</label><input id="featured-sort-order" type="number" min="0" step="1" value={draft.sortOrder} onChange={(event) => onChange({ ...draft, sortOrder: Number(event.target.value) })} aria-invalid={Boolean(errors.sortOrder?.length)} />{errors.sortOrder?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}</div></div>

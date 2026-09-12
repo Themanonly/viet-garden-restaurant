@@ -1,4 +1,4 @@
-import { localizedText, type ContentRoute, type Locale, type LocalizedText } from './models';
+import { localizedText, type ContentRoute, type Locale, type LocalizedText, type RestaurantProfile } from './models';
 import { restaurantProfile } from './restaurant';
 
 export interface SeoMetadata {
@@ -38,7 +38,7 @@ export function getSeoMetadata(locale: Locale, route: ContentRoute): SeoMetadata
   return seoMetadata[basePaths(locale, route)] ?? seoMetadata['/fr'];
 }
 
-export function getRestaurantJsonLd(locale: Locale) {
+export function getRestaurantJsonLd(locale: Locale, profile: RestaurantProfile = restaurantProfile) {
   const baseUrl = 'https://viet-garden.netlify.app';
   return {
     '@context': 'https://schema.org',
@@ -46,18 +46,18 @@ export function getRestaurantJsonLd(locale: Locale) {
     '@id': `${baseUrl}/#restaurant`,
     name: 'Viet Garden Restaurant & Coffee',
     alternateName: ['Viet Garden', 'VIET GARDEN RESTAURANT & COFEE'],
-    description: localizedText(restaurantProfile.description, locale),
+    description: localizedText(profile.description, locale),
     url: `${baseUrl}/${locale}`,
     image: `${baseUrl}/media/viet-garden-hero-poster.jpg`,
     logo: `${baseUrl}/media/viet-garden-logo.png`,
-    telephone: '+212522666773',
+    telephone: profile.contacts.filter((contact) => contact.enabled && contact.type === 'phone').sort((first, second) => Number(Boolean(second.primary)) - Number(Boolean(first.primary)) || first.sortOrder - second.sortOrder)[0]?.value,
     priceRange: '$$',
     servableCuisine: ['Vietnamese', 'Asian', 'Sushi'],
     address: {
       '@type': 'PostalAddress',
-      streetAddress: '80 Bd Moulay Slimane, Aïn Sebaâ',
-      addressLocality: 'Casablanca',
-      postalCode: '20250',
+      streetAddress: localizedText(profile.address, locale),
+      addressLocality: profile.city,
+      postalCode: profile.postalCode,
       addressCountry: 'MA',
     },
     geo: {
@@ -65,7 +65,7 @@ export function getRestaurantJsonLd(locale: Locale) {
       latitude: 33.6098413,
       longitude: -7.5647156,
     },
-    sameAs: restaurantProfile.socialLinks.filter((s) => s.enabled).map((s) => s.url),
+    sameAs: profile.socialLinks.filter((s) => s.enabled).sort((first, second) => first.sortOrder - second.sortOrder).map((s) => s.url),
     openingHoursSpecification: [
       {
         '@type': 'OpeningHoursSpecification',

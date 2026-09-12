@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getRestaurantJsonLd, getSeoMetadata, localeAlternates } from '../../content/seo';
 import { localizedText, locales, type Locale } from '../../content/models';
 import { getMediaAsset } from '../../content/media';
+import { createRestaurantProfileRepository } from '../../content/restaurant-profile-repository';
 
 const supportedLocales = locales;
 
@@ -64,7 +65,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   }
 
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
-  const jsonLd = getRestaurantJsonLd(locale);
+  const profile = await createRestaurantProfileRepository().getProfile();
+  const jsonLd = getRestaurantJsonLd(locale, profile);
 
   return (
     <div lang={locale} dir={dir}>

@@ -62,7 +62,7 @@ export interface AdminMenuStateDto {
 }
 
 export interface AdminCategoryCreateInput {
-  id: string;
+  id?: string;
   name: LocalizedText;
   description?: LocalizedText;
   sortOrder?: number;
@@ -72,7 +72,7 @@ export interface AdminCategoryCreateInput {
 export interface AdminCategoryUpdateInput extends CategoryUpdate {}
 
 export interface AdminMenuItemCreateInput {
-  id: string;
+  id?: string;
   categoryId: string;
   name: LocalizedText;
   description?: LocalizedText;
@@ -85,7 +85,7 @@ export interface AdminMenuItemCreateInput {
 export interface AdminMenuItemUpdateInput extends MenuItemUpdate {}
 
 export interface AdminFeaturedSectionCreateInput {
-  id: string;
+  id?: string;
   title: LocalizedText;
   description?: LocalizedText;
   itemIds: string[];
@@ -99,7 +99,7 @@ export interface AdminAvailabilityInput extends MenuAvailability {}
 export type AdminMediaCreateInput = MediaAsset;
 export type AdminMediaReplacementInput = Omit<MediaAsset, 'id'>;
 
-export type AdminResource = 'menu' | 'availability' | 'category' | 'item' | 'featured-section' | 'media';
+export type AdminResource = 'menu' | 'availability' | 'category' | 'item' | 'featured-section' | 'media' | 'contact' | 'social' | 'ordering' | 'promotion' | 'profile';
 
 export interface AdminErrorInfo {
   code: string;
@@ -152,6 +152,12 @@ function toMediaDto(asset: MediaAsset, items: MenuItem[], canonicalLogoMediaId =
   return { ...clone(asset), usageCount: referencedBy.length, referencedBy, isCanonicalLogo: asset.id === canonicalLogoMediaId };
 }
 
+function generateRecordId(prefix: string, existingIds: string[]): string {
+  const base = prefix.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const builder = `${base || 'record'}-${crypto.randomUUID()}`;
+  return existingIds.includes(builder) ? generateRecordId(prefix, existingIds) : builder;
+}
+
 function resourceForMutationCode(code: string): AdminResource {
   if (code.includes('category')) return 'category';
   if (code.includes('item')) return 'item';
@@ -187,15 +193,16 @@ export class AdminMenuService {
   async createCategory(input: AdminCategoryCreateInput): Promise<AdminCategoryDto> {
     return this.execute('category', async () => {
       const menu = await this.mutations.getMenu();
+      const categoryId = input.id?.trim() ? input.id.trim() : generateRecordId('category', menu.categories.map((candidate) => candidate.id));
       const category: MenuCategory = {
-        id: input.id,
+        id: categoryId,
         name: clone(input.name),
         ...(normalizeOptionalLocalizedText(input.description) ? { description: normalizeOptionalLocalizedText(input.description) } : {}),
         sortOrder: input.sortOrder ?? menu.categories.length,
         active: input.active ?? true,
       };
       const updated = await this.mutations.createCategory(category);
-      return toCategoryDto(updated.categories.find((candidate) => candidate.id === input.id) as MenuCategory);
+      return toCategoryDto(updated.categories.find((candidate) => candidate.id === categoryId) as MenuCategory);
     });
   }
 
@@ -233,8 +240,9 @@ export class AdminMenuService {
     return this.execute('item', async () => {
       const menu = await this.mutations.getMenu();
       const categoryItems = menu.items.filter((item) => item.categoryId === input.categoryId);
+      const itemId = input.id?.trim() ? input.id.trim() : generateRecordId('item', menu.items.map((candidate) => candidate.id));
       const item: MenuItem = {
-        id: input.id,
+        id: itemId,
         categoryId: input.categoryId,
         name: clone(input.name),
         ...(input.description ? { description: clone(input.description) } : {}),
@@ -244,7 +252,7 @@ export class AdminMenuService {
         active: input.active ?? true,
       };
       const updated = await this.mutations.createMenuItem(item);
-      return toItemDto(updated.items.find((candidate) => candidate.id === input.id) as MenuItem);
+      return toItemDto(updated.items.find((candidate) => candidate.id === itemId) as MenuItem);
     });
   }
 
@@ -283,8 +291,9 @@ export class AdminMenuService {
   async createFeaturedSection(input: AdminFeaturedSectionCreateInput): Promise<AdminFeaturedSectionDto> {
     return this.execute('featured-section', async () => {
       const menu = await this.mutations.getMenu();
+      const sectionId = input.id?.trim() ? input.id.trim() : generateRecordId('featured', menu.featuredSections.map((candidate) => candidate.id));
       const section: FeaturedSection = {
-        id: input.id,
+        id: sectionId,
         title: clone(input.title),
         ...(input.description ? { description: clone(input.description) } : {}),
         itemIds: [...input.itemIds],
@@ -292,7 +301,7 @@ export class AdminMenuService {
         active: input.active ?? true,
       };
       const updated = await this.mutations.createFeaturedSection(section);
-      return toFeaturedSectionDto(updated.featuredSections.find((candidate) => candidate.id === input.id) as FeaturedSection);
+      return toFeaturedSectionDto(updated.featuredSections.find((candidate) => candidate.id === sectionId) as FeaturedSection);
     });
   }
 

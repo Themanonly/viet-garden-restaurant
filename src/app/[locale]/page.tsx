@@ -5,6 +5,7 @@ import { localizedText, locales, type Locale } from '../../content/models';
 import { createMenuRepository } from '../../content/menu-repository';
 import { PublicRestaurantStatus } from '../../components/public-restaurant-status';
 import { PublicWeeklySchedule } from '../../components/public-weekly-schedule';
+import { createRestaurantProfileRepository } from '../../content/restaurant-profile-repository';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const locale = (locales as readonly string[]).includes(rawLocale) ? (rawLocale as Locale) : 'fr';
   const heroVideo = getMediaAsset('hero-visual');
   const identityImage = getMediaAsset('identity-visual');
-  const phone = restaurantProfile.phoneNumbers.find((item) => item.enabled);
+  const profile = await createRestaurantProfileRepository().getProfile();
+  const phone = profile.contacts.find((item) => item.enabled && (item.type === 'phone' || item.type === 'whatsapp'));
   const menu = await createMenuRepository().getMenu();
 
   return (
@@ -49,7 +51,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <PublicRestaurantStatus availability={menu.availability} locale={locale} />
           <div className="hero-actions">
             {phone ? (
-              <a className="hero-button hero-button-primary" href={`tel:${phone.dialable}`}>
+              <a className="hero-button hero-button-primary" href={phone.type === 'whatsapp' ? `https://wa.me/${phone.value.replace(/\D/g, '')}` : `tel:${phone.value}`}>
                 {localizedText(homepageHero.primaryAction, locale)}
               </a>
             ) : null}

@@ -12,6 +12,8 @@ import type {
 import type { AdminMenuUiAdapter } from '../content/admin-menu-ui-adapter';
 import type { AdminActionResult } from '../content/admin-menu-actions';
 import { unwrapAdminAction } from '../content/admin-action-client';
+import { DestructiveActionDialog } from './destructive-action-dialog';
+import { LocalizedFieldGroup } from './localized-field-group';
 
 type CategoryEditorState = 'loading' | 'ready' | 'saving' | 'saved' | 'validation-error' | 'error';
 
@@ -31,12 +33,6 @@ export type CategoryServerActions = {
   reorderCategories: (ids: string[]) => Promise<AdminActionResult<AdminUiCategoryDto[]>>;
 };
 type CategoryManagerProps = { adapter?: CategoryOperations; serverActions?: CategoryServerActions };
-
-const locales = [
-  { key: 'fr' as const, label: 'FR', direction: 'ltr' as const },
-  { key: 'en' as const, label: 'EN', direction: 'ltr' as const },
-  { key: 'ar' as const, label: 'AR', direction: 'rtl' as const },
-];
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -79,7 +75,7 @@ export async function saveCategory(adapter: CategoryOperations, draft: CategoryD
     const input: AdminUiCategoryUpdateInput = { name: clone(draft.name), description: Object.keys(draft.description).length > 0 ? clone(draft.description) : undefined, active: draft.active };
     return adapter.updateCategory(editingId, input); 
   }
-  const input: AdminUiCategoryCreateInput = { id: draft.id.trim(), name: clone(draft.name), description: Object.keys(draft.description).length > 0 ? clone(draft.description) : undefined, active: draft.active };
+  const input: AdminUiCategoryCreateInput = { name: clone(draft.name), description: Object.keys(draft.description).length > 0 ? clone(draft.description) : undefined, active: draft.active };
   return adapter.createCategory(input);
 }
 
@@ -100,13 +96,14 @@ function errorFromUnknown(error: unknown): AdminUiError | null {
 export function CategoryEditor({ adapter, draft, editingId, state, onDraftChange, onCancel, onSaved, onError }: { adapter: CategoryOperations; draft: CategoryDraft; editingId: string | null; state: CategoryEditorState; onDraftChange: (draft: CategoryDraft) => void; onCancel: () => void; onSaved: (category: AdminUiCategoryDto) => void; onError: (error: AdminUiError | null, state: CategoryEditorState) => void }) {
   const [error, setError] = useState<AdminUiError | null>(null);
   const editorRef = React.useRef<HTMLFormElement>(null);
-  
+  const isEditing = Boolean(editingId);
+
   React.useEffect(() => {
     if (editorRef.current) {
       editorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, []);
-  
+
   const actualFieldErrors = getCategoryFieldErrors(error);
   const setLocalized = (field: 'name' | 'description', locale: 'fr' | 'en' | 'ar', value: string) => onDraftChange({ ...draft, [field]: { ...draft[field], [locale]: value } });
   const save = async () => {
@@ -122,24 +119,31 @@ export function CategoryEditor({ adapter, draft, editingId, state, onDraftChange
     }
   };
   const submit = (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); void save(); };
+  const saveLabel = state === 'saving' ? 'Saving...' : isEditing ? 'Save changes' : 'Create category';
+  const contextLabel = isEditing ? 'Review and update this category.' : 'Add a new menu category and set its visibility.';
 
   return (
     <form className="admin-category-editor" onSubmit={submit} noValidate={false} ref={editorRef}>
-      <div className="admin-editor-heading"><div><p className="admin-eyebrow">{editingId ? 'Edit category' : 'New category'}</p><h2>{editingId ? 'Update category' : 'Create category'}</h2></div><button type="button" className="admin-text-button" onClick={onCancel}>Cancel</button></div>
+      <div className="admin-editor-heading">
+        <div>
+          <p className="admin-eyebrow">{isEditing ? 'Edit category' : 'Create category'}</p>
+          <h2>{isEditing ? 'Edit category' : 'Create category'}</h2>
+        </div>
+        <button type="button" className="admin-secondary-button" onClick={onCancel}>Cancel</button>
+      </div>
+      <p className="admin-editor-description">{contextLabel}</p>
       {error ? <CategoryValidationSummary error={error} /> : null}
-      <div className="admin-category-id-row">
-        <div className="admin-field"><label htmlFor="category-id">Category ID</label><input id="category-id" value={draft.id} disabled={Boolean(editingId)} required onChange={(event) => onDraftChange({ ...draft, id: event.target.value })} aria-invalid={Boolean(actualFieldErrors.id?.length)} />{actualFieldErrors.id?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}</div>
+      <div className="admin-category-id-row" aria-hidden="true">
         <label className="admin-checkbox-label"><input type="checkbox" checked={draft.active} onChange={(event) => onDraftChange({ ...draft, active: event.target.checked })} /> Active</label>
       </div>
-      <LocalizedCategoryFields id="name" label="Category name" required value={draft.name} errors={actualFieldErrors} onChange={(locale, value) => setLocalized('name', locale, value)} />
-      <LocalizedCategoryFields id="description" label="Description (optional)" value={draft.description} errors={actualFieldErrors} onChange={(locale, value) => setLocalized('description', locale, value)} />
-      <div className="admin-editor-actions"><span className={`admin-save-state is-${state}`} aria-live="polite">{state === 'saving' ? 'Saving...' : state === 'saved' ? 'Saved' : state === 'validation-error' ? 'Validation error' : state === 'error' ? 'Could not save' : 'Unsaved changes'}</span><button type="button" className="admin-primary-button" onClick={save} disabled={state === 'saving'}>{state === 'saving' ? 'Saving...' : 'Save category'}</button></div>
+      <LocalizedFieldGroup id="name" label="Category name" required fieldPrefix="category-" value={draft.name} errors={actualFieldErrors} onChange={(locale, value) => setLocalized('name', locale, value)} />
+      <LocalizedFieldGroup id="description" label="Description (optional)" fieldPrefix="category-" value={draft.description} errors={actualFieldErrors} onChange={(locale, value) => setLocalized('description', locale, value)} />
+      <div className="admin-editor-actions">
+        <span className={`admin-save-state is-${state}`} aria-live="polite">{state === 'saving' ? 'Saving...' : state === 'saved' ? 'Saved' : state === 'validation-error' ? 'Validation error' : state === 'error' ? 'Could not save' : isEditing ? 'Ready to save' : 'Ready to create'}</span>
+        <button type="submit" className="admin-primary-button" disabled={state === 'saving'}>{saveLabel}</button>
+      </div>
     </form>
   );
-}
-
-function LocalizedCategoryFields({ id, label, required = false, value, errors, onChange }: { id: 'name' | 'description'; label: string; required?: boolean; value: LocalizedText; errors: Record<string, string[]>; onChange: (locale: 'fr' | 'en' | 'ar', value: string) => void }) {
-  return <fieldset className="admin-localized-group"><legend>{label}</legend><div className="admin-localized-fields">{locales.map((locale) => { const fieldId = `category-${id}-${locale.key}`; const path = `${id}.${locale.key}`; return <div className="admin-field" key={locale.key}><label htmlFor={fieldId}>{locale.label}{required ? ' *' : ''}</label><textarea id={fieldId} dir={locale.direction} value={value[locale.key] ?? ''} required={required} rows={2} onChange={(event) => onChange(locale.key, event.target.value)} aria-invalid={Boolean(errors[path]?.length)} aria-describedby={errors[path]?.length ? `${fieldId}-error` : undefined} />{errors[path]?.map((message) => <p className="admin-field-error" id={`${fieldId}-error`} key={message}>{message}</p>)}</div>; })}</div></fieldset>;
 }
 
 function CategoryValidationSummary({ error }: { error: AdminUiError }) {
@@ -162,6 +166,8 @@ export function CategoryManager({ adapter, serverActions }: CategoryManagerProps
   const [state, setState] = useState<CategoryEditorState>('loading');
   const [error, setError] = useState<AdminUiError | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUiCategoryDto | null>(null);
+  const [deleteState, setDeleteState] = useState<'idle' | 'submitting'>('idle');
 
   const load = async () => {
     const managementState = await operations.getManagementState();
@@ -201,13 +207,24 @@ export function CategoryManager({ adapter, serverActions }: CategoryManagerProps
     } catch (nextError) { setError(errorFromUnknown(nextError)); setState('error'); }
   };
   const deleteCategory = async (category: AdminUiCategoryDto) => {
-    if (!confirmCategoryDeletion(category, (message) => window.confirm(message))) return;
+    setDeleteTarget(category);
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!deleteTarget) return;
+    setDeleteState('submitting');
     setState('saving');
     try {
-      await operations.deleteCategory(category.id);
+      await operations.deleteCategory(deleteTarget.id);
+      setDeleteTarget(null);
       await load();
       setState('saved');
-    } catch (nextError) { setError(errorFromUnknown(nextError)); setState('error'); }
+    } catch (nextError) {
+      setError(errorFromUnknown(nextError));
+      setState('error');
+    } finally {
+      setDeleteState('idle');
+    }
   };
 
   if (state === 'loading') return <p className="admin-placeholder">Loading categories...</p>;
@@ -218,6 +235,19 @@ export function CategoryManager({ adapter, serverActions }: CategoryManagerProps
     <CategoryList categories={categories} itemCounts={itemCounts} busy={state === 'saving'} onMove={moveCategory} onEdit={openEdit} onDelete={deleteCategory} onToggle={toggleActive} />
     {categories.length === 0 ? <p className="admin-empty-state">No categories found.</p> : null}
     {editorDraft ? <CategoryEditor adapter={operations} draft={editorDraft} editingId={editingId} state={hasChanges ? state : 'ready'} onDraftChange={handleDraftChange} onCancel={closeEditor} onSaved={handleSaved} onError={handleEditorError} /> : null}
+    {deleteTarget ? (
+      <DestructiveActionDialog
+        open
+        title="Delete this category?"
+        description={`This permanently removes “${deleteTarget.name.fr ?? deleteTarget.name.en ?? deleteTarget.name.ar ?? deleteTarget.id}” from the menu.`}
+        warning={itemCounts[deleteTarget.id] ? `This category is still used by ${itemCounts[deleteTarget.id]} menu item${itemCounts[deleteTarget.id] === 1 ? '' : 's'}. Deleting it may affect the menu.` : 'This action cannot be undone.'}
+        confirmLabel="Delete category"
+        cancelLabel="Cancel"
+        isSubmitting={deleteState === 'submitting'}
+        onCancel={() => { setDeleteTarget(null); setDeleteState('idle'); }}
+        onConfirm={confirmDeleteCategory}
+      />
+    ) : null}
   </div>;
 }
 

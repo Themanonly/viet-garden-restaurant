@@ -1,9 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
 import type { AdminUiCategoryDto, AdminUiError, AdminUiManagementStateDto, AdminUiMediaDto, AdminUiMenuItemCreateInput, AdminUiMenuItemDto, AdminUiMenuItemUpdateInput } from '../content/admin-menu-ui-adapter';
 import type { AdminActionResult } from '../content/admin-menu-actions';
 import { unwrapAdminAction } from '../content/admin-action-client';
+import { DestructiveActionDialog } from './destructive-action-dialog';
 import { LocalizedFieldGroup } from './localized-field-group';
 
 type ManagerState = 'loading' | 'ready' | 'saving' | 'saved' | 'validation-error' | 'error';
@@ -68,6 +69,8 @@ export function MenuItemsManager({ serverActions }: { serverActions: MenuItemsSe
   const [managerState, setManagerState] = useState<ManagerState>('loading');
   const [error, setError] = useState<AdminUiError | null>(null);
   const [filter, setFilter] = useState('all');
+  const [deleteTarget, setDeleteTarget] = useState<AdminUiMenuItemDto | null>(null);
+  const [deleteState, setDeleteState] = useState<'idle' | 'submitting'>('idle');
 
   const load = async () => { const [nextState, nextMedia] = await Promise.all([operations.getManagementState(), operations.listMedia()]); setState(nextState); setMedia(nextMedia); };
   useEffect(() => { load().then(() => setManagerState('ready')).catch((nextError) => { setError(errorFromUnknown(nextError)); setManagerState('error'); }); }, []);
@@ -84,16 +87,28 @@ export function MenuItemsManager({ serverActions }: { serverActions: MenuItemsSe
     if (!draft) return;
     setManagerState('saving'); setError(null);
     try {
-      const input: AdminUiMenuItemCreateInput = { ...draft, description: Object.keys(draft.description ?? {}).length ? draft.description : undefined, mediaId: draft.mediaId || undefined, sortOrder: Number(draft.sortOrder), price: { amount: Number(draft.price.amount), currency: 'MAD' } };
+      const input: AdminUiMenuItemCreateInput = {
+        categoryId: draft.categoryId,
+        name: draft.name,
+        description: Object.keys(draft.description ?? {}).length ? draft.description : undefined,
+        mediaId: draft.mediaId || undefined,
+        sortOrder: Number(draft.sortOrder),
+        price: { amount: Number(draft.price.amount), currency: 'MAD' },
+        active: draft.active,
+      };
       if (editingId) await operations.updateItem(editingId, input);
       else await operations.createItem(input);
       await load(); setDraft(null); setEditingId(null); setManagerState('saved');
     } catch (nextError) { const applicationError = nextError as AdminUiError; setError(applicationError); setManagerState(applicationError?.info?.fields?.length ? 'validation-error' : 'error'); }
   };
   const remove = async (item: AdminUiMenuItemDto) => {
-    if (!window.confirm(`Delete item “${getItemDisplayName(item)}”?`)) return;
+    setDeleteTarget(item);
+  };
+  const confirmRemove = async () => {
+    if (!deleteTarget) return;
+    setDeleteState('submitting');
     setManagerState('saving');
-    try { await operations.deleteItem(item.id); await load(); setManagerState('saved'); } catch (nextError) { setError(nextError as AdminUiError); setManagerState('error'); }
+    try { await operations.deleteItem(deleteTarget.id); setDeleteTarget(null); await load(); setManagerState('saved'); } catch (nextError) { setError(nextError as AdminUiError); setManagerState('error'); } finally { setDeleteState('idle'); }
   };
   const toggle = async (item: AdminUiMenuItemDto) => { setManagerState('saving'); try { await operations.updateItem(item.id, { active: !item.active }); await load(); setManagerState('saved'); } catch (nextError) { setError(nextError as AdminUiError); setManagerState('error'); } };
   const move = async (item: AdminUiMenuItemDto, categoryId: string) => { setManagerState('saving'); try { await operations.moveItem(item.id, categoryId); await load(); setManagerState('saved'); } catch (nextError) { setError(nextError as AdminUiError); setManagerState('error'); } };
@@ -110,18 +125,82 @@ export function MenuItemsManager({ serverActions }: { serverActions: MenuItemsSe
     <label className="admin-select-field admin-item-filter">Category<select value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">All categories</option>{categories.map((category) => <option key={category.id} value={category.id}>{categoryName(category)}</option>)}</select></label>
     <div className="admin-item-list" aria-label="Menu items">{filtered.map((item) => { const siblings = state.items.filter((candidate) => candidate.categoryId === item.categoryId).sort((a, b) => a.sortOrder - b.sortOrder); const index = siblings.findIndex((candidate) => candidate.id === item.id); return <article className="admin-item-row" key={item.id}><div className="admin-item-order" aria-label={`Order ${item.sortOrder + 1}`}>{String(item.sortOrder + 1).padStart(2, '0')}</div><div className="admin-item-main"><div className="admin-item-title"><h2>{getItemDisplayName(item)}</h2><span className={item.active ? 'admin-state is-active' : 'admin-state'}>{item.active ? 'Active' : 'Inactive'}</span></div><p className="admin-item-meta"><span>{categoryName(categories.find((category) => category.id === item.categoryId) ?? { id: item.categoryId, name: {} } as AdminUiCategoryDto)}</span><span>{item.price.amount.toFixed(2)} {item.price.currency}</span><span>{item.mediaId ? 'Media assigned' : 'No media'}</span><span>ID: {item.id}</span></p></div><div className="admin-item-actions"><button type="button" className="admin-icon-button" disabled={managerState === 'saving' || index === 0} onClick={() => reorder(item, -1)} aria-label={`Move ${getItemDisplayName(item)} up`}>↑</button><button type="button" className="admin-icon-button" disabled={managerState === 'saving' || index === siblings.length - 1} onClick={() => reorder(item, 1)} aria-label={`Move ${getItemDisplayName(item)} down`}>↓</button><button type="button" className="admin-text-button" onClick={() => startEdit(item)}>Edit</button><button type="button" className="admin-text-button is-danger" onClick={() => remove(item)}>Delete</button><button type="button" className="admin-text-button" onClick={() => toggle(item)}>{item.active ? 'Deactivate' : 'Activate'}</button></div></article>; })}</div>
     {draft ? <ItemEditor draft={draft} editingId={editingId} categories={categories} media={media} state={managerState} errors={errors} onChange={updateDraft} onCancel={() => setDraft(null)} onSave={save} /> : null}
+    {deleteTarget ? <DestructiveActionDialog open title="Delete this menu item?" description={`This permanently removes “${getItemDisplayName(deleteTarget)}” from the menu.`} warning="This action cannot be undone." confirmLabel="Delete item" isSubmitting={deleteState === 'submitting'} onCancel={() => { setDeleteTarget(null); setDeleteState('idle'); }} onConfirm={confirmRemove} /> : null}
   </div>;
 }
 
-function ItemEditor({ draft, editingId, categories, media, state, errors, onChange, onCancel, onSave }: { draft: ItemDraft; editingId: string | null; categories: AdminUiCategoryDto[]; media: AdminUiMediaDto[]; state: ManagerState; errors: Record<string, string[]>; onChange: (draft: ItemDraft) => void; onCancel: () => void; onSave: () => void }) {
+export function ItemEditor({ draft, editingId, categories, media, state, errors, onChange, onCancel, onSave }: { draft: ItemDraft; editingId: string | null; categories: AdminUiCategoryDto[]; media: AdminUiMediaDto[]; state: ManagerState; errors: Record<string, string[]>; onChange: (draft: ItemDraft) => void; onCancel: () => void; onSave: () => void }) {
   const editorRef = useRef<HTMLFormElement>(null);
-  
+
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, []);
-  
+
   const setLocalized = (field: 'name' | 'description', locale: 'fr' | 'en' | 'ar', value: string) => onChange({ ...draft, [field]: { ...draft[field], [locale]: value } });
-  return <form className="admin-item-editor" ref={editorRef} onSubmit={(event) => { event.preventDefault(); onSave(); }}><div className="admin-editor-heading"><div><p className="admin-eyebrow">{editingId ? 'Edit item' : 'New item'}</p><h2>{editingId ? 'Update menu item' : 'Create menu item'}</h2></div><button type="button" className="admin-text-button" onClick={onCancel}>Cancel</button></div><div className="admin-item-editor-grid"><div className="admin-field"><label htmlFor="item-id">Item ID</label><input id="item-id" value={draft.id} disabled={Boolean(editingId)} required onChange={(event) => onChange({ ...draft, id: event.target.value })} />{errors.id?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}</div><label className="admin-checkbox-label"><input type="checkbox" checked={draft.active} onChange={(event) => onChange({ ...draft, active: event.target.checked })} /> Active</label><label className="admin-select-field">Category<select value={draft.categoryId} onChange={(event) => onChange({ ...draft, categoryId: event.target.value })}>{categories.map((category) => <option key={category.id} value={category.id}>{categoryName(category)}</option>)}</select>{errors.categoryId?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}</label><div className="admin-field"><label htmlFor="item-price">Price amount</label><input id="item-price" type="number" min="0" step="0.01" value={draft.price.amount} onChange={(event) => onChange({ ...draft, price: { amount: Number(event.target.value), currency: 'MAD' } })} />{errors['price.amount']?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}</div><div className="admin-field"><label htmlFor="item-currency">Currency</label><select id="item-currency" value="MAD" disabled><option>MAD</option></select></div><div className="admin-field"><label htmlFor="item-sort-order">Sort order</label><input id="item-sort-order" type="number" min="0" step="1" value={draft.sortOrder} onChange={(event) => onChange({ ...draft, sortOrder: Number(event.target.value) })} />{errors.sortOrder?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}</div><label className="admin-select-field">Media<select value={draft.mediaId ?? ''} onChange={(event) => onChange({ ...draft, mediaId: event.target.value || undefined })}><option value="">No media</option>{media.map((asset) => <option key={asset.id} value={asset.id}>{asset.alt.fr ?? asset.id} {asset.usageCount ? `(${asset.usageCount} uses)` : ''}</option>)}</select>{errors.mediaId?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}</label></div><LocalizedFieldGroup id="name" label="Name" value={draft.name} errors={errors} onChange={(locale, value) => setLocalized('name', locale, value)} /><LocalizedFieldGroup id="description" label="Description (optional)" value={draft.description ?? {}} errors={errors} onChange={(locale, value) => setLocalized('description', locale, value)} /><div className="admin-editor-actions"><span className={`admin-save-state is-${state}`} aria-live="polite">{state === 'saving' ? 'Saving...' : state === 'saved' ? 'Saved' : state === 'validation-error' ? 'Validation error' : state === 'error' ? 'Could not save' : 'Unsaved changes'}</span><button type="submit" className="admin-primary-button" disabled={state === 'saving'}>{state === 'saving' ? 'Saving...' : 'Save item'}</button></div></form>;
+
+  return (
+    <form className="admin-item-editor" ref={editorRef} onSubmit={(event) => { event.preventDefault(); onSave(); }}>
+      <div className="admin-editor-heading">
+        <div>
+          <p className="admin-eyebrow">{editingId ? 'Edit item' : 'New item'}</p>
+          <h2>{editingId ? 'Update menu item' : 'Create menu item'}</h2>
+        </div>
+        <button type="button" className="admin-secondary-button" onClick={onCancel}>Cancel</button>
+      </div>
+
+      <p className="admin-editor-description">Add the essentials for this menu item and adjust additional details as needed.</p>
+
+      <div className="admin-item-editor-grid admin-item-editor-grid--primary">
+        <label className="admin-select-field">
+          <span>Category</span>
+          <select value={draft.categoryId} onChange={(event) => onChange({ ...draft, categoryId: event.target.value })}>
+            {categories.map((category) => <option key={category.id} value={category.id}>{categoryName(category)}</option>)}
+          </select>
+          {errors.categoryId?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}
+        </label>
+
+        <div className="admin-field">
+          <label htmlFor="item-price">Price (MAD)</label>
+          <input id="item-price" type="number" min="0" step="0.01" value={draft.price.amount} onChange={(event) => onChange({ ...draft, price: { amount: Number(event.target.value), currency: 'MAD' } })} />
+          {errors['price.amount']?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}
+        </div>
+
+        <label className="admin-checkbox-label admin-checkbox-label--primary">
+          <input type="checkbox" checked={draft.active} onChange={(event) => onChange({ ...draft, active: event.target.checked })} />
+          Active
+        </label>
+      </div>
+
+      <LocalizedFieldGroup id="name" label="Item name" required fieldPrefix="item-" value={draft.name} errors={errors} onChange={(locale, value) => setLocalized('name', locale, value)} />
+      <LocalizedFieldGroup id="description" label="Description (optional)" fieldPrefix="item-" value={draft.description ?? { fr: '', en: '', ar: '' }} errors={errors} onChange={(locale, value) => setLocalized('description', locale, value)} />
+
+      <div className="admin-item-editor-grid admin-item-editor-grid--secondary">
+        <div className="admin-field admin-select-field">
+          <label htmlFor="item-media">Media (optional)</label>
+          <select id="item-media" value={draft.mediaId ?? ''} onChange={(event) => onChange({ ...draft, mediaId: event.target.value || undefined })}>
+            <option value="">No media</option>
+            {media.map((asset) => <option key={asset.id} value={asset.id}>{asset.alt.fr ?? asset.alt.en ?? asset.alt.ar ?? asset.id}</option>)}
+          </select>
+          {errors.mediaId?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}
+        </div>
+
+        <div className="admin-field">
+          <label htmlFor="item-sort-order">Display order</label>
+          <input id="item-sort-order" type="number" min="0" step="1" value={draft.sortOrder} onChange={(event) => onChange({ ...draft, sortOrder: Number(event.target.value) })} />
+          {errors.sortOrder?.map((message) => <p className="admin-field-error" key={message}>{message}</p>)}
+        </div>
+      </div>
+
+      <div className="admin-editor-actions">
+        <span className={`admin-save-state is-${state}`} aria-live="polite">
+          {state === 'saving' ? 'Saving...' : state === 'saved' ? 'Saved' : state === 'validation-error' ? 'Validation error' : state === 'error' ? 'Could not save' : editingId ? 'Ready to save' : 'Ready to create'}
+        </span>
+        <button type="submit" className="admin-primary-button" disabled={state === 'saving'}>
+          {state === 'saving' ? 'Saving...' : editingId ? 'Save changes' : 'Create item'}
+        </button>
+      </div>
+    </form>
+  );
 }

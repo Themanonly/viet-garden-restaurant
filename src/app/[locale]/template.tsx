@@ -2,6 +2,7 @@ import { SiteShell } from '../../components/site-shell';
 import { createBrandSettingsRepository } from '../../content/brand-settings';
 import { createMediaRepository } from '../../content/media-repository';
 import { locales, type Locale } from '../../content/models';
+import { createRestaurantProfileRepository } from '../../content/restaurant-profile-repository';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -20,6 +21,7 @@ export default async function LocaleTemplate({
   const settings = createBrandSettingsRepository();
   const mediaRepository = createMediaRepository();
   const logo = await mediaRepository.getMedia(await settings.getBrandLogoMediaId());
+  const profile = await createRestaurantProfileRepository().getProfile();
 
-  return <SiteShell locale={locale} logo={logo}>{children}</SiteShell>;
+  return <SiteShell locale={locale} logo={logo} profile={profile}>{children}</SiteShell>;
 }

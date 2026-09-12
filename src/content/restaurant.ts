@@ -21,12 +21,15 @@ export const restaurantProfile: RestaurantProfile = {
   city: 'Casablanca',
   postalCode: '20250',
   googleMapsUrl: 'https://www.google.com/maps/place/VIET+GARDEN+RESTAURANT+%26+COFEE/@33.6098413,-7.5647156,17z',
-  phoneNumbers: [
+  contacts: [
     {
       id: 'main',
-      display: '05 22 66 67 73',
-      dialable: '+212522666773',
+      type: 'phone',
+      value: '+212522666773',
+      displayValue: '05 22 66 67 73',
       enabled: true,
+      sortOrder: 0,
+      primary: true,
       label: { fr: 'Réservations', en: 'Reservations', ar: 'الحجوزات' },
     },
   ],
@@ -37,6 +40,7 @@ export const restaurantProfile: RestaurantProfile = {
       label: { fr: 'Instagram', en: 'Instagram', ar: 'Instagram' },
       url: 'https://www.instagram.com/viet_garden_restaurant/',
       enabled: true,
+      sortOrder: 0,
     },
     {
       id: 'facebook',
@@ -44,13 +48,18 @@ export const restaurantProfile: RestaurantProfile = {
       label: { fr: 'Facebook', en: 'Facebook', ar: 'Facebook' },
       url: 'https://www.facebook.com/vietgardenofficiel/',
       enabled: true,
+      sortOrder: 1,
     },
   ],
-  ordering: [
+  orderingChannels: [
     {
-      label: { fr: 'Commander sur Glovo', en: 'Order on Glovo', ar: 'اطلب عبر Glovo' },
+      id: 'glovo',
+      name: { fr: 'Glovo', en: 'Glovo', ar: 'Glovo' },
+      type: 'glovo',
       url: 'https://glovoapp.com/ma/fr/casablanca/viet-garden-cas',
-      source: 'glovo',
+      ctaText: { fr: 'Commander sur Glovo', en: 'Order on Glovo', ar: 'اطلب عبر Glovo' },
+      enabled: true,
+      sortOrder: 0,
     },
   ],
 };
