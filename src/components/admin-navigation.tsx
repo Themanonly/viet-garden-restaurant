@@ -20,7 +20,7 @@ export const adminNavigationGroups: AdminNavigationGroup[] = [
       { href: '/admin/business', label: 'Business Information' },
       { href: '/admin/status', label: 'Hours & Status' },
       { href: '/admin/contact', label: 'Contacts & Social' },
-      { href: '/admin/contact', label: 'Ordering Channels' },
+      { href: '/admin/ordering', label: 'Ordering Channels' },
     ],
   },
   {
