@@ -49,21 +49,20 @@ export class SupabaseRestaurantProfileRepository implements RestaurantProfileRep
   }
 
   async replaceProfile(profile: RestaurantProfile): Promise<void> {
-    await this.database.upsert<ProfileRow>('restaurant_profiles', [{
+    const profileRow: ProfileRow = {
       id: profile.id,
       name: profile.name,
       description: profile.description,
-      source_language: profile.sourceLanguage,
+      source_language: profile.sourceLanguage ?? 'fr',
       address: profile.address,
       city: profile.city,
-      postal_code: profile.postalCode,
-      google_maps_url: profile.googleMapsUrl,
+      postal_code: profile.postalCode ?? '',
+      google_maps_url: profile.googleMapsUrl ?? '',
       ordering: profile.orderingChannels,
-    }], 'id');
-    await this.database.remove<unknown>('restaurant_contacts', 'profile_id=eq.viet-garden-casablanca');
-    await this.database.remove<unknown>('restaurant_social_links', 'profile_id=eq.viet-garden-casablanca');
-    if (profile.contacts.length) await this.database.insert<ContactRow>('restaurant_contacts', profile.contacts.map((contact) => ({ id: contact.id, profile_id: profile.id, type: contact.type, label: contact.label, value: contact.value, display_value: contact.displayValue ?? null, enabled: contact.enabled, sort_order: contact.sortOrder, primary_flag: contact.primary ?? false })));
-    if (profile.socialLinks.length) await this.database.insert<SocialRow>('restaurant_social_links', profile.socialLinks.map((social) => ({ id: social.id, profile_id: profile.id, platform: social.platform, label: social.label, url: social.url, handle: social.handle ?? null, icon: social.icon ?? null, icon_media_id: social.iconMediaId ?? null, enabled: social.enabled, sort_order: social.sortOrder })));
+    };
+    const contacts: ContactRow[] = profile.contacts.map((contact) => ({ id: contact.id, profile_id: profile.id, type: contact.type, label: contact.label, value: contact.value, display_value: contact.displayValue ?? null, enabled: contact.enabled, sort_order: contact.sortOrder, primary_flag: contact.primary ?? false }));
+    const socials: SocialRow[] = profile.socialLinks.map((social) => ({ id: social.id, profile_id: profile.id, platform: social.platform, label: social.label, url: social.url, handle: social.handle ?? null, icon: social.icon ?? null, icon_media_id: social.iconMediaId ?? null, enabled: social.enabled, sort_order: social.sortOrder }));
+    await this.database.rpc('replace_restaurant_profile', { p_profile: profileRow, p_contacts: contacts, p_socials: socials });
   }
 }
 

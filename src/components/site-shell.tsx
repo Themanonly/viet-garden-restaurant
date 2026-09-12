@@ -7,7 +7,8 @@ import type { ReactNode } from 'react';
 import { localizedText, type Locale, type MediaAsset, type RestaurantProfile } from '../content/models';
 import { localizedPathname, restaurantProfile, routeHref, siteNavigation, languageLabels } from '../content/restaurant';
 import { contactPresentation, orderingPresentation, socialPresentation } from '../content/platform-presentation';
-import { getMediaAsset } from '../content/media';
+import { resolvePlatformMedia, socialIconFallback } from '../content/platform-media';
+import { PlatformMediaIcon } from './platform-media-icon';
 
 function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash }: { localeOptions: Locale[]; currentLocale: Locale; pathname: string | null; currentHash: string }) {
   return (
@@ -43,7 +44,7 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
   const menuRef = useRef<HTMLDetailsElement>(null);
   const menuLabel = localizedText({ fr: 'Menu', en: 'Menu', ar: 'القائمة' }, currentLocale);
   const managedProfile = profile ?? restaurantProfile;
-  const resolveMedia = (id?: string) => id ? media.find((asset) => asset.id === id) : undefined;
+  const resolveMedia = (id?: string) => resolvePlatformMedia(media, id);
   const primaryOrder = managedProfile.orderingChannels.filter((channel) => channel.enabled).sort((first, second) => first.sortOrder - second.sortOrder)[0];
   const closeMenu = () => {
     if (menuRef.current) menuRef.current.open = false;
@@ -134,7 +135,7 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
             ))}
             {managedProfile.socialLinks.filter((social) => social.enabled).sort((first, second) => first.sortOrder - second.sortOrder).map((social) => (
               <a key={social.id} href={social.url} target="_blank" rel="noreferrer" className="footer-link">
-                <>{resolveMedia(social.iconMediaId) ? <img className="footer-social-image" src={resolveMedia(social.iconMediaId)?.reference} alt="" /> : <span className="footer-social-icon" aria-hidden="true">{social.icon || socialPresentation[social.platform]?.icon || '•'}</span>} {localizedText(social.label.en || social.label.fr || social.label.ar ? social.label : socialPresentation[social.platform]?.label ?? { fr: social.platform, en: social.platform, ar: social.platform }, currentLocale)}</>
+                <><PlatformMediaIcon asset={resolveMedia(social.iconMediaId)} className="footer-social-image" fallback={socialIconFallback(social.platform, social.icon)} /> {localizedText(social.label.en || social.label.fr || social.label.ar ? social.label : socialPresentation[social.platform]?.label ?? { fr: social.platform, en: social.platform, ar: social.platform }, currentLocale)}</>
               </a>
             ))}
           </div>
@@ -147,7 +148,7 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
             <a href={managedProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-link-strong">
               {localizedText({ fr: 'Google Maps', en: 'Google Maps', ar: 'خرائط Google' }, currentLocale)}
             </a>
-            {primaryOrder ? <a href={primaryOrder.url} target="_blank" rel="noreferrer" className="footer-link footer-link-strong">{resolveMedia(primaryOrder.logoMediaId) ? <img className="footer-ordering-image" src={resolveMedia(primaryOrder.logoMediaId)?.reference} alt="" /> : null}{localizedText(primaryOrder.ctaText ?? orderingPresentation[primaryOrder.type]?.cta ?? primaryOrder.name, currentLocale)}</a> : null}
+            {primaryOrder ? <a href={primaryOrder.url} target="_blank" rel="noreferrer" className="footer-link footer-link-strong"><PlatformMediaIcon asset={resolveMedia(primaryOrder.logoMediaId)} className="footer-ordering-image" />{localizedText(primaryOrder.ctaText ?? orderingPresentation[primaryOrder.type]?.cta ?? primaryOrder.name, currentLocale)}</a> : null}
           </div>
         </div>
       </footer>

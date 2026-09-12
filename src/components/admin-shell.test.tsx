@@ -19,7 +19,7 @@ test('admin navigation exposes the admin destinations grouped by area', () => {
     '/admin/business',
     '/admin/status',
     '/admin/contact',
-    '/admin/contact',
+    '/admin/ordering',
     '/admin/categories',
     '/admin/items',
     '/admin/featured',
@@ -32,5 +32,7 @@ test('admin navigation exposes the admin destinations grouped by area', () => {
 test('admin navigation resolves the active destination and preserves route compatibility', () => {
   assert.equal(getActiveAdminNavigationItem('/admin/items')?.label, 'Menu Items');
   assert.equal(getActiveAdminNavigationItem('/admin/status')?.label, 'Hours & Status');
+  assert.equal(getActiveAdminNavigationItem('/admin/contact')?.label, 'Contacts & Social');
+  assert.equal(getActiveAdminNavigationItem('/admin/ordering')?.label, 'Ordering Channels');
   assert.equal(getActiveAdminNavigationItem('/unknown'), undefined);
 });

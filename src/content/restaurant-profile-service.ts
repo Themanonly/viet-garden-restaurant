@@ -100,6 +100,9 @@ export class RestaurantProfileService {
     const profile = await this.getProfile();
     const social: RestaurantSocialLink = { ...clone(input), id: input.id?.trim() || generateRecordId('social', profile.socialLinks.map((item) => item.id)) };
     this.validateSocial(social);
+    if (profile.socialLinks.some(existing => existing.sortOrder === social.sortOrder)) {
+      social.sortOrder = Math.max(-1, ...profile.socialLinks.map(existing => existing.sortOrder)) + 1;
+    }
     profile.socialLinks.push(social);
     await this.repository.replaceProfile(profile);
     return clone(social);
