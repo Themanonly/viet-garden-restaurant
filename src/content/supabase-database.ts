@@ -99,7 +99,8 @@ export class SupabaseRestDatabaseClient implements SupabaseDatabaseClient {
       const detail = await response.text();
       throw new Error(`Supabase database request failed with status ${response.status}: ${detail}`);
     }
-    return await response.json() as T;
+    const body = await response.text();
+    return (body ? JSON.parse(body) : undefined) as T;
   }
 
   private headers(extra: Record<string, string> = {}): Record<string, string> {

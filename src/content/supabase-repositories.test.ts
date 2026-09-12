@@ -5,7 +5,7 @@ import { menuDocument } from './menu';
 import { SupabaseMenuRepository } from './supabase-menu-repository';
 import { SupabaseMediaRepository, type SupabaseMediaRow } from './supabase-media-repository';
 import type { MediaStorage, StoredMediaObject } from './media-storage';
-import type { SupabaseDatabaseClient } from './supabase-database';
+import { SupabaseRestDatabaseClient, type SupabaseDatabaseClient } from './supabase-database';
 
 function clone<T>(value: T): T {
   return structuredClone(value);
@@ -87,6 +87,15 @@ class FakeDatabase implements SupabaseDatabaseClient {
     return this.revision as T;
   }
 }
+
+test('Supabase RPC accepts a successful no-content response', async () => {
+  const client = new SupabaseRestDatabaseClient({ projectUrl: 'https://example.supabase.co', serviceRoleKey: 'test-key' }, {
+    async request() {
+      return { ok: true, status: 204, text: async () => '', json: async () => { throw new Error('JSON must not be parsed for a no-content response'); } };
+    },
+  });
+  assert.equal(await client.rpc('replace_restaurant_profile', { p_profile: {}, p_contacts: [], p_socials: [] }), undefined);
+});
 
 class FakeStorage implements MediaStorage {
   readonly provider = 'object' as const;
