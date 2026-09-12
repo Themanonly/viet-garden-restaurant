@@ -455,6 +455,7 @@ button, input, select, textarea {
 .admin-nav-link { display: flex; min-height: 42px; align-items: center; padding: 0.65rem 0.75rem; border-left: 2px solid transparent; border-radius: 0.2rem; color: rgba(244, 241, 233, 0.75); font-size: 0.87rem; }
 .admin-nav-link:hover, .admin-nav-link:focus-visible { background: rgba(244, 241, 233, 0.08); color: #fff; }
 .admin-nav-link.is-active { border-left-color: #d2b48c; background: rgba(244, 241, 233, 0.11); color: #fff; font-weight: 600; }
+.footer-social-image, .footer-ordering-image { width: 1.25rem; height: 1.25rem; margin-inline-end: 0.35rem; object-fit: contain; vertical-align: middle; }
 .admin-main { min-width: 0; }
 .admin-page-header {
   display: flex;
