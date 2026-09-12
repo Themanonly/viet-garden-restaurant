@@ -6,7 +6,6 @@ import type { AdminActionResult } from '../content/admin-menu-actions';
 import type { AdminUiContactCreateInput, AdminUiContactDto, AdminUiContactUpdateInput, AdminUiSocialCreateInput, AdminUiSocialDto, AdminUiSocialUpdateInput } from '../content/admin-restaurant-profile-ui-adapter';
 import type { LocalizedText, RestaurantContactType } from '../content/models';
 import { DestructiveActionDialog } from './destructive-action-dialog';
-import { LocalizedFieldGroup } from './localized-field-group';
 
 type ManagerState = 'loading' | 'ready' | 'saving' | 'error';
 type ContactDraft = AdminUiContactCreateInput & { id: string };
