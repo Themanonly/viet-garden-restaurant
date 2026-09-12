@@ -31,7 +31,7 @@ export interface RestaurantSocialLink {
   url: string;
   handle?: string;
   icon?: string;
-  iconMediaId?: string;
+  iconMediaId?: string | null;
   enabled: boolean;
   sortOrder: number;
 }

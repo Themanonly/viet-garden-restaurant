@@ -44,7 +44,7 @@ export class SupabaseRestaurantProfileRepository implements RestaurantProfileRep
       googleMapsUrl: profile.google_maps_url,
       orderingChannels: profile.ordering,
       contacts: contacts.map((contact) => ({ id: contact.id, type: contact.type, label: contact.label, value: contact.value, ...(contact.display_value ? { displayValue: contact.display_value } : {}), enabled: contact.enabled, sortOrder: contact.sort_order, ...(contact.primary_flag ? { primary: true } : {}) })),
-      socialLinks: socialLinks.map((social) => ({ id: social.id, platform: social.platform, label: social.label, url: social.url, ...(social.handle ? { handle: social.handle } : {}), ...(social.icon ? { icon: social.icon } : {}), ...(social.icon_media_id ? { iconMediaId: social.icon_media_id } : {}), enabled: social.enabled, sortOrder: social.sort_order })),
+      socialLinks: socialLinks.map((social) => ({ id: social.id, platform: social.platform, label: social.label, url: social.url, ...(social.handle ? { handle: social.handle } : {}), ...(social.icon ? { icon: social.icon } : {}), iconMediaId: social.icon_media_id, enabled: social.enabled, sortOrder: social.sort_order })),
     });
   }
 

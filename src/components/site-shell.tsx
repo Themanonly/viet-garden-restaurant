@@ -135,7 +135,7 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
             ))}
             {managedProfile.socialLinks.filter((social) => social.enabled).sort((first, second) => first.sortOrder - second.sortOrder).map((social) => (
               <a key={social.id} href={social.url} target="_blank" rel="noreferrer" className="footer-link">
-                <><PlatformMediaIcon asset={resolveMedia(social.iconMediaId)} className="footer-social-image" fallback={socialIconFallback(social.platform, social.icon)} /> {localizedText(social.label.en || social.label.fr || social.label.ar ? social.label : socialPresentation[social.platform]?.label ?? { fr: social.platform, en: social.platform, ar: social.platform }, currentLocale)}</>
+                <><PlatformMediaIcon asset={resolveMedia(social.iconMediaId ?? undefined)} className="footer-social-image" fallback={socialIconFallback(social.platform, social.icon)} /> {localizedText(social.label.en || social.label.fr || social.label.ar ? social.label : socialPresentation[social.platform]?.label ?? { fr: social.platform, en: social.platform, ar: social.platform }, currentLocale)}</>
               </a>
             ))}
           </div>

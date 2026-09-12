@@ -63,7 +63,7 @@ test('atomic replacement preserves every existing record on failure', async () =
   assert.deepEqual(await repository.getProfile(), before);
 });
 
-test('media reference survives replacement and reload, clearing persists null and preserves legacy icons', async () => {
+test('media reference survives clear and restore replacement cycles', async () => {
   const database = new FakeProfileDatabase();
   const repository = new SupabaseRestaurantProfileRepository(database);
   const candidate = structuredClone(restaurantProfile);
@@ -73,13 +73,15 @@ test('media reference survives replacement and reload, clearing persists null an
   assert.equal(database.socialLinks[0].icon_media_id, 'brand-logo');
   const reloaded = await repository.getProfile();
   assert.equal(reloaded.socialLinks[0].iconMediaId, 'brand-logo');
-  reloaded.socialLinks[0].iconMediaId = undefined;
-  await repository.replaceProfile(reloaded);
+  const service = new RestaurantProfileService(repository);
+  await service.updateSocialLink('instagram', { iconMediaId: null });
   assert.equal(database.socialLinks[0].icon_media_id, null);
   const cleared = await repository.getProfile();
-  assert.equal(cleared.socialLinks[0].iconMediaId, undefined);
+  assert.equal(cleared.socialLinks[0].iconMediaId, null);
   assert.equal(cleared.socialLinks[0].icon, 'instagram');
   assert.equal(cleared.socialLinks.length, 2);
+  await service.updateSocialLink('instagram', { iconMediaId: 'brand-logo' });
+  assert.equal((await repository.getProfile()).socialLinks[0].iconMediaId, 'brand-logo');
 });
 
 test('new Social form position zero appends safely with a selected media asset', async () => {
