@@ -407,6 +407,8 @@ button, input, select, textarea {
 }
 
 .admin-sidebar {
+  display: flex;
+  flex-direction: column;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -442,6 +444,8 @@ button, input, select, textarea {
 .admin-sign-out .admin-text-button { color: rgba(244, 241, 233, 0.72); padding-inline: 0; }
 .admin-sign-out .admin-text-button:hover, .admin-sign-out .admin-text-button:focus-visible { color: #fff; }
 .admin-navigation {
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
   gap: 1rem;
 }
@@ -637,6 +641,7 @@ button, input, select, textarea {
 @media (max-width: 720px) {
   .admin-shell { display: block; }
   .admin-sidebar { position: static; height: auto; padding: 1rem; }
+  .admin-navigation { overflow-y: visible; }
   .admin-brand { padding: 0 0 1rem; }
   .admin-desktop-navigation { display: none; }
   .admin-mobile-navigation { display: grid; gap: 0.4rem; }
