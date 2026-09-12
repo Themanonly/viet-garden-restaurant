@@ -16,7 +16,7 @@ interface ProfileRow {
 }
 
 type ContactRow = Omit<RestaurantContact, 'sortOrder' | 'displayValue' | 'primary'> & { profile_id: string; display_value: string | null; sort_order: number; primary_flag: boolean };
-type SocialRow = Omit<RestaurantSocialLink, 'sortOrder' | 'handle' | 'icon'> & { profile_id: string; sort_order: number; handle: string | null; icon: string | null };
+type SocialRow = Omit<RestaurantSocialLink, 'sortOrder' | 'handle' | 'icon' | 'iconMediaId'> & { profile_id: string; sort_order: number; handle: string | null; icon: string | null; icon_media_id: string | null };
 
 function clone<T>(value: T): T {
   return structuredClone(value);
@@ -44,7 +44,7 @@ export class SupabaseRestaurantProfileRepository implements RestaurantProfileRep
       googleMapsUrl: profile.google_maps_url,
       orderingChannels: profile.ordering,
       contacts: contacts.map((contact) => ({ id: contact.id, type: contact.type, label: contact.label, value: contact.value, ...(contact.display_value ? { displayValue: contact.display_value } : {}), enabled: contact.enabled, sortOrder: contact.sort_order, ...(contact.primary_flag ? { primary: true } : {}) })),
-      socialLinks: socialLinks.map((social) => ({ id: social.id, platform: social.platform, label: social.label, url: social.url, ...(social.handle ? { handle: social.handle } : {}), ...(social.icon ? { icon: social.icon } : {}), enabled: social.enabled, sortOrder: social.sort_order })),
+      socialLinks: socialLinks.map((social) => ({ id: social.id, platform: social.platform, label: social.label, url: social.url, ...(social.handle ? { handle: social.handle } : {}), ...(social.icon ? { icon: social.icon } : {}), ...(social.icon_media_id ? { iconMediaId: social.icon_media_id } : {}), enabled: social.enabled, sortOrder: social.sort_order })),
     });
   }
 
@@ -63,7 +63,7 @@ export class SupabaseRestaurantProfileRepository implements RestaurantProfileRep
     await this.database.remove<unknown>('restaurant_contacts', 'profile_id=eq.viet-garden-casablanca');
     await this.database.remove<unknown>('restaurant_social_links', 'profile_id=eq.viet-garden-casablanca');
     if (profile.contacts.length) await this.database.insert<ContactRow>('restaurant_contacts', profile.contacts.map((contact) => ({ id: contact.id, profile_id: profile.id, type: contact.type, label: contact.label, value: contact.value, display_value: contact.displayValue ?? null, enabled: contact.enabled, sort_order: contact.sortOrder, primary_flag: contact.primary ?? false })));
-    if (profile.socialLinks.length) await this.database.insert<SocialRow>('restaurant_social_links', profile.socialLinks.map((social) => ({ id: social.id, profile_id: profile.id, platform: social.platform, label: social.label, url: social.url, handle: social.handle ?? null, icon: social.icon ?? null, enabled: social.enabled, sort_order: social.sortOrder })));
+    if (profile.socialLinks.length) await this.database.insert<SocialRow>('restaurant_social_links', profile.socialLinks.map((social) => ({ id: social.id, profile_id: profile.id, platform: social.platform, label: social.label, url: social.url, handle: social.handle ?? null, icon: social.icon ?? null, icon_media_id: social.iconMediaId ?? null, enabled: social.enabled, sort_order: social.sortOrder })));
   }
 }
 
