@@ -21,5 +21,5 @@ import {
 } from '../../../content/admin-menu-actions';
 
 export default function AdminContactPage() {
-  return <AdminShell title="Contact & Social"><ContactSocialManager serverActions={{ readAdminContacts, createAdminContact, updateAdminContact, deleteAdminContact, reorderAdminContacts, readAdminSocialLinks, createAdminSocialLink, updateAdminSocialLink, deleteAdminSocialLink, reorderAdminSocialLinks }} /><OrderingChannelsManager serverActions={{ readAdminOrderingChannels, createAdminOrderingChannel, updateAdminOrderingChannel, deleteAdminOrderingChannel, reorderAdminOrderingChannels, readAdminMedia }} /></AdminShell>;
+  return <AdminShell title="Contact & Social"><ContactSocialManager serverActions={{ readAdminContacts, createAdminContact, updateAdminContact, deleteAdminContact, reorderAdminContacts, readAdminSocialLinks, createAdminSocialLink, updateAdminSocialLink, deleteAdminSocialLink, reorderAdminSocialLinks, readAdminMedia }} /><OrderingChannelsManager serverActions={{ readAdminOrderingChannels, createAdminOrderingChannel, updateAdminOrderingChannel, deleteAdminOrderingChannel, reorderAdminOrderingChannels, readAdminMedia }} /></AdminShell>;
 }
