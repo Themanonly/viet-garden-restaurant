@@ -95,7 +95,10 @@ export class SupabaseRestDatabaseClient implements SupabaseDatabaseClient {
 
   private async request<T>(path: string, init: RequestInit): Promise<T> {
     const response = await this.client.request(`${this.config.projectUrl}${path}`, init);
-    if (!response.ok) throw new Error(`Supabase database request failed with status ${response.status}.`);
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`Supabase database request failed with status ${response.status}: ${detail}`);
+    }
     return await response.json() as T;
   }
 
