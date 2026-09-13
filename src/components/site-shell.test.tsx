@@ -36,3 +36,10 @@ test('localized location cards keep one destination without duplicating complete
     assert.doesNotMatch(locationMarkup, /class="footer-location-meta"/);
   }
 });
+
+test('city changes remain visible in the location card when the address is not updated', () => {
+  const profile = structuredClone(restaurantProfile);
+  profile.city = 'Rabat';
+  const markup = renderToStaticMarkup(<SiteShell locale="en" profile={profile}><main>Home</main></SiteShell>);
+  assert.match(markup, /class="footer-location-meta">Rabat 20250/);
+});

@@ -48,7 +48,7 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
   const resolveMedia = (id?: string) => resolvePlatformMedia(media, id);
   const locationAddress = localizedText(managedProfile.address, currentLocale);
   const locationMeta = `${managedProfile.city} ${managedProfile.postalCode}`.trim();
-  const locationIncludesMeta = locationAddress.includes(managedProfile.postalCode) && (locationAddress.includes(managedProfile.city) || /[,،]/.test(locationAddress));
+  const locationIncludesMeta = locationAddress.includes(managedProfile.postalCode) && (locationAddress.includes(managedProfile.city) || (currentLocale === 'ar' && /[,،]/.test(locationAddress)));
   const primaryOrder = managedProfile.orderingChannels.filter((channel) => channel.enabled).sort((first, second) => first.sortOrder - second.sortOrder)[0];
   const closeMenu = () => {
     if (menuRef.current) menuRef.current.open = false;
