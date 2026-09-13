@@ -1358,7 +1358,8 @@ button, input, select, textarea {
 
 .footer-inner {
   display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr;
+  grid-template-columns: 1.25fr repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: var(--space-10);
   padding-block: var(--space-12);
 }
@@ -1366,6 +1367,7 @@ button, input, select, textarea {
 .footer-brand-block {
   display: grid;
   align-content: start;
+  justify-items: center;
   gap: var(--space-4);
 }
 
@@ -1381,7 +1383,8 @@ button, input, select, textarea {
 
 .footer-copy {
   margin: 0;
-  max-width: 32rem;
+  max-width: 18rem;
+  text-align: center;
   color: rgba(255, 250, 245, 0.7);
 }
 
