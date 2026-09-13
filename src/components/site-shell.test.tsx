@@ -43,3 +43,68 @@ test('city changes remain visible in the location card when the address is not u
   const markup = renderToStaticMarkup(<SiteShell locale="en" profile={profile}><main>Home</main></SiteShell>);
   assert.match(markup, /class="footer-location-meta">Rabat 20250/);
 });
+
+test('header ordering uses a generic localized action and targets the dedicated ordering section', () => {
+  const profile = structuredClone(restaurantProfile);
+  profile.orderingChannels = [
+    { id: 'glovo', name: { fr: 'Glovo', en: 'Glovo', ar: 'Glovo' }, type: 'glovo', url: 'https://glovoapp.com/ma/fr/casablanca/viet-garden-cas', ctaText: { fr: 'Commander sur Glovo', en: 'Order on Glovo', ar: 'اطلب عبر Glovo' }, enabled: true, sortOrder: 0 },
+    { id: 'yassir', name: { fr: 'Yassir', en: 'Yassir', ar: 'ياسر' }, type: 'yassir', url: 'https://example.test/yassir', ctaText: { fr: 'Commander sur Yassir', en: 'Order on Yassir', ar: 'اطلب عبر ياسر' }, enabled: true, sortOrder: 1 },
+  ];
+
+  const enMarkup = renderToStaticMarkup(<SiteShell locale="en" profile={profile}><main>Home</main></SiteShell>);
+  assert.match(enMarkup, /href="\/en#ordering-details"/);
+  assert.match(enMarkup, />Order Online<\/a>/);
+  assert.doesNotMatch(enMarkup, />Glovo<\/a>/);
+
+  const frMarkup = renderToStaticMarkup(<SiteShell locale="fr" profile={profile}><main>Home</main></SiteShell>);
+  assert.match(frMarkup, />Commander<\/a>/);
+
+  const arMarkup = renderToStaticMarkup(<SiteShell locale="ar" profile={profile}><main>Home</main></SiteShell>);
+  assert.match(arMarkup, />اطلب الآن<\/a>/);
+});
+
+test('header ordering action is omitted and footer ordering section stays hidden when no channels are enabled', () => {
+  const profile = structuredClone(restaurantProfile);
+  profile.orderingChannels = [
+    { id: 'glovo', name: { fr: 'Glovo', en: 'Glovo', ar: 'Glovo' }, type: 'glovo', url: 'https://glovoapp.com/ma/fr/casablanca/viet-garden-cas', ctaText: { fr: 'Commander sur Glovo', en: 'Order on Glovo', ar: 'اطلب عبر Glovo' }, enabled: false, sortOrder: 0 },
+  ];
+
+  const markup = renderToStaticMarkup(<SiteShell locale="en" profile={profile}><main>Home</main></SiteShell>);
+  assert.doesNotMatch(markup, /href="#ordering-details"/);
+  assert.doesNotMatch(markup, /id="ordering-details"/);
+  assert.doesNotMatch(markup, /Order Online/);
+});
+
+test('footer ordering section renders all enabled channels in sort order and excludes disabled ones', () => {
+  const profile = structuredClone(restaurantProfile);
+  profile.orderingChannels = [
+    { id: 'yassir', name: { fr: 'Yassir', en: 'Yassir', ar: 'ياسر' }, type: 'yassir', url: 'https://example.test/yassir', ctaText: { fr: 'Commander sur Yassir', en: 'Order on Yassir', ar: 'اطلب عبر ياسر' }, enabled: true, sortOrder: 2 },
+    { id: 'glovo', name: { fr: 'Glovo', en: 'Glovo', ar: 'Glovo' }, type: 'glovo', url: 'https://glovoapp.com/ma/fr/casablanca/viet-garden-cas', ctaText: { fr: 'Commander sur Glovo', en: 'Order on Glovo', ar: 'اطلب عبر Glovo' }, enabled: true, sortOrder: 0 },
+    { id: 'disabled', name: { fr: 'Désactivé', en: 'Disabled', ar: 'معطل' }, type: 'other', url: 'https://example.test/disabled', ctaText: { fr: 'Commander', en: 'Order', ar: 'اطلب' }, enabled: false, sortOrder: 1 },
+  ];
+
+  const markup = renderToStaticMarkup(<SiteShell locale="en" profile={profile}><main>Home</main></SiteShell>);
+  const orderingMarkup = markup.match(/<div id="ordering-details"[\s\S]*?<\/div>/)?.[0] ?? '';
+  assert.match(orderingMarkup, /id="ordering-details"/);
+  assert.match(orderingMarkup, /Order on Glovo/);
+  assert.match(orderingMarkup, /Order on Yassir/);
+  assert.doesNotMatch(orderingMarkup, /Disabled|Order\s+on\s+Disabled/);
+  assert.ok(orderingMarkup.indexOf('Order on Glovo') < orderingMarkup.indexOf('Order on Yassir'));
+});
+
+test('ordering content stays out of the Find Us column and missing media falls back without broken-image markup', () => {
+  const profile = structuredClone(restaurantProfile);
+  profile.orderingChannels = [
+    { id: 'glovo', name: { fr: 'Glovo', en: 'Glovo', ar: 'Glovo' }, type: 'glovo', url: 'https://glovoapp.com/ma/fr/casablanca/viet-garden-cas', logoMediaId: 'missing-logo', ctaText: { fr: 'Commander sur Glovo', en: 'Order on Glovo', ar: 'اطلب عبر Glovo' }, enabled: true, sortOrder: 0 },
+  ];
+
+  const media: NonNullable<React.ComponentProps<typeof SiteShell>['media']> = [{ id: 'existing-logo', type: 'image', source: 'remote', reference: 'https://example.test/logo.png', alt: { fr: 'Logo', en: 'Logo', ar: 'شعار' }, visible: true, sortOrder: 0 }];
+  const markup = renderToStaticMarkup(<SiteShell locale="en" profile={profile} media={media}><main>Home</main></SiteShell>);
+
+  const locationIndex = markup.indexOf('id="location-details"');
+  const orderingIndex = markup.indexOf('id="ordering-details"');
+  assert.ok(locationIndex >= 0 && orderingIndex > locationIndex, 'ordering section should come after the location block');
+  assert.ok(markup.indexOf('Order on Glovo') > orderingIndex, 'ordering content should reside inside the dedicated ordering block');
+  assert.doesNotMatch(markup, /onError=|broken-image|img[^>]*src=""/);
+  assert.match(markup, /id="ordering-details"/);
+});

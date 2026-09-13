@@ -1360,10 +1360,14 @@ button, input, select, textarea {
 
 .footer-inner {
   display: grid;
-  grid-template-columns: 1.25fr repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(0, 1fr));
   align-items: start;
   gap: var(--space-10);
   padding-block: var(--space-12);
+}
+
+.footer-inner-with-ordering {
+  grid-template-columns: minmax(0, 1.2fr) repeat(4, minmax(0, 1fr));
 }
 
 .footer-brand-block {
@@ -1433,8 +1437,26 @@ button, input, select, textarea {
   font-weight: 600;
 }
 
-.footer-location-card { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 0.45rem; max-width: 18rem; }
-.footer-location-copy { display: grid; gap: 0.2rem; }
+.footer-ordering-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.footer-location-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  max-width: 18rem;
+  min-width: 0;
+}
+
+.footer-location-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
 .footer-location-meta { color: rgba(255, 250, 245, 0.62); font-size: 0.82rem; }
 .footer-location-action { color: var(--color-gold); font-size: 0.78rem; font-weight: 600; }
 
@@ -1543,7 +1565,8 @@ button, input, select, textarea {
     line-height: 1.2;
   }
 
-  .footer-inner {
+  .footer-inner,
+  .footer-inner-with-ordering {
     grid-template-columns: 1fr;
     gap: var(--space-8);
     padding-block: var(--space-10);

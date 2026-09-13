@@ -49,7 +49,9 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
   const locationAddress = localizedText(managedProfile.address, currentLocale);
   const locationMeta = `${managedProfile.city} ${managedProfile.postalCode}`.trim();
   const locationIncludesMeta = locationAddress.includes(managedProfile.postalCode) && (locationAddress.includes(managedProfile.city) || (currentLocale === 'ar' && /[,،]/.test(locationAddress)));
-  const primaryOrder = managedProfile.orderingChannels.filter((channel) => channel.enabled).sort((first, second) => first.sortOrder - second.sortOrder)[0];
+  const enabledOrderingChannels = managedProfile.orderingChannels.filter((channel) => channel.enabled).sort((first, second) => first.sortOrder - second.sortOrder);
+  const genericOrderingLabel = localizedText({ fr: 'Commander', en: 'Order Online', ar: 'اطلب الآن' }, currentLocale);
+  const orderingLabel = localizedText({ fr: 'Commander', en: 'Order Online', ar: 'اطلب عبر الإنترنت' }, currentLocale);
   const closeMenu = () => {
     if (menuRef.current) menuRef.current.open = false;
   };
@@ -63,15 +65,15 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
       {siteNavigation.map((item) => {
         const href = item.route === 'home' ? `/${currentLocale}` : routeHref(currentLocale, item.route);
         return (
-          <a key={item.route} href={href} className="nav-link">
+          <a key={item.route} href={href} className="nav-link" onClick={closeMenu}>
             {localizedText(item.label, currentLocale)}
           </a>
         );
       })}
 
-      {primaryOrder ? (
-        <a href={primaryOrder.url} className="nav-order-link">
-          {localizedText(primaryOrder.ctaText ?? primaryOrder.name, currentLocale)}
+      {enabledOrderingChannels.length > 0 ? (
+        <a href={localizedPathname(currentLocale, pathname, '#ordering-details')} className="nav-link nav-order-link" onClick={closeMenu}>
+          {genericOrderingLabel}
         </a>
       ) : null}
 
@@ -122,7 +124,7 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
       </div>
 
       <footer className="site-footer">
-        <div className="shell-frame footer-inner">
+        <div className={enabledOrderingChannels.length > 0 ? 'shell-frame footer-inner footer-inner-with-ordering' : 'shell-frame footer-inner'}>
           <div className="footer-brand-block">
             <div className="brand brand-footer">
               {logo ? <img className="brand-logo-image" src={logo.reference} alt={localizedText(logo.alt, currentLocale)} /> : null}
@@ -158,8 +160,24 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
                 <span className="footer-location-action">{localizedText({ fr: 'Ouvrir dans Google Maps', en: 'Open in Google Maps', ar: 'فتح في خرائط Google' }, currentLocale)}</span>
               </span>
             </a>
-            {primaryOrder ? <a href={primaryOrder.url} target="_blank" rel="noreferrer" className="footer-link footer-link-strong"><PlatformMediaIcon asset={resolveMedia(primaryOrder.logoMediaId)} className="footer-ordering-image" />{localizedText(primaryOrder.ctaText ?? orderingPresentation[primaryOrder.type]?.cta ?? primaryOrder.name, currentLocale)}</a> : null}
           </div>
+
+          {enabledOrderingChannels.length > 0 ? (
+            <div id={footerAnchorIds.ordering} className="footer-column">
+              <p className="footer-label">{orderingLabel}</p>
+              {enabledOrderingChannels.map((channel) => {
+                const channelLabel = localizedText(channel.name ?? orderingPresentation[channel.type]?.name ?? { fr: channel.type, en: channel.type, ar: channel.type }, currentLocale);
+                const channelCta = localizedText(channel.ctaText ?? orderingPresentation[channel.type]?.cta ?? { fr: 'Commander', en: 'Order', ar: 'اطلب' }, currentLocale);
+                const channelAsset = resolveMedia(channel.logoMediaId);
+                return (
+                  <a key={channel.id} href={channel.url} target="_blank" rel="noreferrer" className="footer-link footer-link-strong footer-ordering-link">
+                    <PlatformMediaIcon asset={channelAsset} className="footer-ordering-image" fallback={channelLabel.slice(0, 1).toUpperCase()} />
+                    {channelCta || channelLabel}
+                  </a>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       </footer>
     </>

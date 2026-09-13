@@ -90,7 +90,7 @@ export const siteNavigation: NavigationItem[] = [
   { route: 'contact', label: { fr: 'Contact', en: 'Contact', ar: 'اتصل بنا' } },
 ];
 
-export const footerAnchorIds = { contact: 'contact-details', location: 'location-details' } as const;
+export const footerAnchorIds = { contact: 'contact-details', location: 'location-details', ordering: 'ordering-details' } as const;
 
 export const routePaths: Record<Exclude<NavigationItem['route'], 'home'>, string> = {
   menu: 'menu',
