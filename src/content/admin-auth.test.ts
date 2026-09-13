@@ -25,7 +25,7 @@ test('Proxy redirects unauthenticated Admin requests and leaves authenticated re
 
   const authenticated = proxy(new NextRequest('https://example.test/admin/categories', { headers: { cookie: sessionCookie() } }));
   assert.equal(authenticated.status, 200);
-  assert.equal(proxyConfig.matcher, '/admin/:path*');
+  assert.equal(proxyConfig.matcher, '/:path*');
 });
 
 test('Admin request authorization rejects missing and non-admin sessions', async () => {
