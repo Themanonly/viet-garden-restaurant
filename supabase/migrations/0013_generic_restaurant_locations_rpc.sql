@@ -5,7 +5,6 @@ security invoker
 set search_path = public
 as $$
 declare
-  location_row jsonb;
   enabled_count integer;
   primary_count integer;
 begin
@@ -18,23 +17,23 @@ begin
 
   if exists (
     select 1
-    from jsonb_array_elements(p_locations) location_row
-    where location_row ->> 'profile_id' is distinct from p_profile_id
+    from jsonb_array_elements(p_locations) as payload_row
+    where payload_row ->> 'profile_id' is distinct from p_profile_id
   ) then
     raise exception 'Replacement locations must belong to this profile';
   end if;
 
-  select count(*) filter (where (location_row ->> 'enabled')::boolean), count(*) filter (where (location_row ->> 'is_primary')::boolean)
+    select count(*) filter (where (payload_row ->> 'enabled')::boolean), count(*) filter (where (payload_row ->> 'is_primary')::boolean)
   into enabled_count, primary_count
-  from jsonb_array_elements(p_locations) location_row;
+  from jsonb_array_elements(p_locations) as payload_row;
 
   if enabled_count > 0 and primary_count <> 1 then
     raise exception 'Exactly one enabled location must be primary';
   end if;
   if exists (
-    select 1 from jsonb_array_elements(p_locations) location_row
-    where coalesce((location_row ->> 'enabled')::boolean, false) = false
-      and coalesce((location_row ->> 'is_primary')::boolean, false) = true
+    select 1 from jsonb_array_elements(p_locations) as payload_row
+    where coalesce((payload_row ->> 'enabled')::boolean, false) = false
+      and coalesce((payload_row ->> 'is_primary')::boolean, false) = true
   ) then
     raise exception 'A disabled location cannot be primary';
   end if;
@@ -43,17 +42,17 @@ begin
 
   insert into public.restaurant_locations (id, profile_id, name, address, city, postal_code, google_maps_url, is_primary, enabled, sort_order)
   select
-    location_row ->> 'id',
-    location_row ->> 'profile_id',
-    location_row -> 'name',
-    location_row -> 'address',
-    location_row ->> 'city',
-    location_row ->> 'postal_code',
-    nullif(location_row ->> 'google_maps_url', ''),
-    coalesce((location_row ->> 'is_primary')::boolean, false),
-    coalesce((location_row ->> 'enabled')::boolean, true),
-    (location_row ->> 'sort_order')::integer
-  from jsonb_array_elements(p_locations) location_row;
+    payload_row ->> 'id',
+    payload_row ->> 'profile_id',
+    payload_row -> 'name',
+    payload_row -> 'address',
+    payload_row ->> 'city',
+    payload_row ->> 'postal_code',
+    nullif(payload_row ->> 'google_maps_url', ''),
+    coalesce((payload_row ->> 'is_primary')::boolean, false),
+    coalesce((payload_row ->> 'enabled')::boolean, true),
+    (payload_row ->> 'sort_order')::integer
+  from jsonb_array_elements(p_locations) as payload_row;
 end;
 $$;
 
