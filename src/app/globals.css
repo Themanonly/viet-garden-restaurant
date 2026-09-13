@@ -1395,16 +1395,20 @@ button, input, select, textarea {
 }
 
 .footer-column:target {
-  animation: footer-target-highlight 1.8s ease-out;
+  animation: none;
 }
 
-@keyframes footer-target-highlight {
-  0% { background: rgba(210, 180, 140, 0.2); box-shadow: 0 0 0 0 rgba(210, 180, 140, 0.25); }
-  100% { background: transparent; box-shadow: 0 0 0 0.75rem transparent; }
+.footer-column:target .footer-label {
+  animation: footer-target-heading 1.15s ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .footer-column:target { animation: none; background: rgba(210, 180, 140, 0.12); }
+  .footer-column:target .footer-label { animation: none; color: var(--color-gold); text-decoration: underline; text-decoration-color: var(--color-gold); text-underline-offset: 0.35rem; }
+}
+
+@keyframes footer-target-heading {
+  0% { color: var(--color-gold); text-shadow: 0 0 0.85rem rgba(210, 180, 140, 0.6); text-decoration: underline; text-decoration-color: var(--color-gold); text-underline-offset: 0.35rem; }
+  100% { color: rgba(255, 250, 245, 0.62); text-shadow: none; text-decoration: none; }
 }
 
 .footer-label {

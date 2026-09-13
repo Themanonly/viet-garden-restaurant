@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { localizedText, type Locale, type MediaAsset, type RestaurantProfile } from '../content/models';
-import { localizedPathname, restaurantProfile, routeHref, siteNavigation, languageLabels } from '../content/restaurant';
+import { footerAnchorIds, localizedPathname, restaurantProfile, routeHref, siteNavigation, languageLabels } from '../content/restaurant';
 import { contactPresentation, orderingPresentation, socialPresentation } from '../content/platform-presentation';
 import { resolvePlatformMedia } from '../content/platform-media';
 import { PlatformMediaIcon } from './platform-media-icon';
@@ -127,7 +127,7 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
             <p className="footer-copy">{localizedText({ fr: 'Une table vietnamienne à Casablanca, des assiettes généreuses et des moments à partager.', en: 'A Vietnamese table in Casablanca, generous plates, and moments made to share.', ar: 'مائدة فيتنامية في الدار البيضاء، أطباق سخية ولحظات نتشاركها.' }, currentLocale)}</p>
           </div>
 
-          <div id="contact-details" className="footer-column">
+          <div id={footerAnchorIds.contact} className="footer-column">
             <p className="footer-label">{localizedText({ fr: 'Informations de contact', en: 'Contact Information', ar: 'معلومات الاتصال' }, currentLocale)}</p>
             {managedProfile.contacts.filter((contact) => contact.enabled).sort((first, second) => first.sortOrder - second.sortOrder).map((contact) => (
               <a key={contact.id} href={contact.type === 'phone' || contact.type === 'fax' ? `tel:${contact.value}` : contact.type === 'whatsapp' ? `https://wa.me/${contact.value.replace(/\D/g, '')}` : contact.type === 'email' ? `mailto:${contact.value}` : contact.value} className="footer-link">
@@ -136,7 +136,7 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
             ))}
           </div>
 
-          <div id="location-details" className="footer-column">
+          <div className="footer-column">
             <p className="footer-label">{localizedText({ fr: 'Réseaux sociaux', en: 'Social Links', ar: 'روابط التواصل الاجتماعي' }, currentLocale)}</p>
             {managedProfile.socialLinks.filter((social) => social.enabled).sort((first, second) => first.sortOrder - second.sortOrder).map((social) => (
               <a key={social.id} href={social.url} target="_blank" rel="noreferrer" className="footer-link">
@@ -145,7 +145,7 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
             ))}
           </div>
 
-          <div className="footer-column">
+          <div id={footerAnchorIds.location} className="footer-column">
             <p className="footer-label">{localizedText({ fr: 'Nous trouver', en: 'Find Us', ar: 'موقعنا' }, currentLocale)}</p>
             <a href={managedProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link">
               <PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresse', en: 'Address', ar: 'العنوان' }, currentLocale)} /> {localizedText(managedProfile.address, currentLocale)}
