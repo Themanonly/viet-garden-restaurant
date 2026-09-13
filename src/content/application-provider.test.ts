@@ -3,6 +3,8 @@ import test from 'node:test';
 import { getApplicationDataProvider } from './application-provider';
 import { createMenuRepository } from './menu-repository';
 import { SupabaseMenuRepository } from './supabase-menu-repository';
+import { createLocationRepository } from './location-repository';
+import { SupabaseLocationRepository } from './supabase-location-repository';
 
 const environmentKeys = ['NODE_ENV', 'VIET_GARDEN_DATA_PROVIDER', 'VIET_GARDEN_MEDIA_STORAGE_PROVIDER', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_STORAGE_BUCKET'] as const;
 const environment = process.env as Record<string, string | undefined>;
@@ -33,6 +35,7 @@ test('Supabase provider requires complete server-only configuration and selects 
     environment.SUPABASE_STORAGE_BUCKET = 'viet-garden-media';
     assert.equal(getApplicationDataProvider(), 'supabase');
     assert.equal(createMenuRepository() instanceof SupabaseMenuRepository, true);
+    assert.equal(createLocationRepository() instanceof SupabaseLocationRepository, true);
   } finally {
     environmentKeys.forEach((key) => {
       if (previous[key] === undefined) delete environment[key];
