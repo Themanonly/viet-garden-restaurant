@@ -7,8 +7,9 @@ import type { ReactNode } from 'react';
 import { localizedText, type Locale, type MediaAsset, type RestaurantProfile } from '../content/models';
 import { localizedPathname, restaurantProfile, routeHref, siteNavigation, languageLabels } from '../content/restaurant';
 import { contactPresentation, orderingPresentation, socialPresentation } from '../content/platform-presentation';
-import { resolvePlatformMedia, socialIconFallback } from '../content/platform-media';
+import { resolvePlatformMedia } from '../content/platform-media';
 import { PlatformMediaIcon } from './platform-media-icon';
+import { PlatformIcon } from './platform-icon';
 
 function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash }: { localeOptions: Locale[]; currentLocale: Locale; pathname: string | null; currentHash: string }) {
   return (
@@ -130,12 +131,12 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
             <p className="footer-label">{localizedText({ fr: 'Contact', en: 'Contact', ar: 'اتصل بنا' }, currentLocale)}</p>
             {managedProfile.contacts.filter((contact) => contact.enabled).sort((first, second) => first.sortOrder - second.sortOrder).map((contact) => (
               <a key={contact.id} href={contact.type === 'phone' || contact.type === 'fax' ? `tel:${contact.value}` : contact.type === 'whatsapp' ? `https://wa.me/${contact.value.replace(/\D/g, '')}` : contact.type === 'email' ? `mailto:${contact.value}` : contact.value} className="footer-link">
-                {contact.displayValue ?? localizedText(contact.label.en || contact.label.fr || contact.label.ar ? contact.label : contactPresentation[contact.type], currentLocale)}
+                <PlatformIcon kind="contact" value={contact.type} className="footer-platform-icon" label={localizedText(contact.label.en || contact.label.fr || contact.label.ar ? contact.label : contactPresentation[contact.type], currentLocale)} /> {contact.displayValue ?? localizedText(contact.label.en || contact.label.fr || contact.label.ar ? contact.label : contactPresentation[contact.type], currentLocale)}
               </a>
             ))}
             {managedProfile.socialLinks.filter((social) => social.enabled).sort((first, second) => first.sortOrder - second.sortOrder).map((social) => (
               <a key={social.id} href={social.url} target="_blank" rel="noreferrer" className="footer-link">
-                <><PlatformMediaIcon asset={resolveMedia(social.iconMediaId ?? undefined)} className="footer-social-image" fallback={socialIconFallback(social.platform, social.icon)} /> {localizedText(social.label.en || social.label.fr || social.label.ar ? social.label : socialPresentation[social.platform]?.label ?? { fr: social.platform, en: social.platform, ar: social.platform }, currentLocale)}</>
+                <>{social.platform === 'custom' && social.iconMediaId ? <PlatformMediaIcon asset={resolveMedia(social.iconMediaId)} className="footer-social-image" /> : <PlatformIcon kind="social" value={social.platform} className="footer-platform-icon" label={localizedText(social.label.en || social.label.fr || social.label.ar ? social.label : socialPresentation[social.platform]?.label ?? { fr: social.platform, en: social.platform, ar: social.platform }, currentLocale)} />} {localizedText(social.label.en || social.label.fr || social.label.ar ? social.label : socialPresentation[social.platform]?.label ?? { fr: social.platform, en: social.platform, ar: social.platform }, currentLocale)}</>
               </a>
             ))}
           </div>
@@ -143,10 +144,10 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
           <div className="footer-column">
             <p className="footer-label">{localizedText({ fr: 'Nous trouver', en: 'Find Us', ar: 'موقعنا' }, currentLocale)}</p>
             <a href={managedProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link">
-              {localizedText(managedProfile.address, currentLocale)}
+              <PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresse', en: 'Address', ar: 'العنوان' }, currentLocale)} /> {localizedText(managedProfile.address, currentLocale)}
             </a>
             <a href={managedProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-link-strong">
-              {localizedText({ fr: 'Google Maps', en: 'Google Maps', ar: 'خرائط Google' }, currentLocale)}
+              <PlatformIcon kind="location" className="footer-platform-icon" label="Google Maps" /> {localizedText({ fr: 'Google Maps', en: 'Google Maps', ar: 'خرائط Google' }, currentLocale)}
             </a>
             {primaryOrder ? <a href={primaryOrder.url} target="_blank" rel="noreferrer" className="footer-link footer-link-strong"><PlatformMediaIcon asset={resolveMedia(primaryOrder.logoMediaId)} className="footer-ordering-image" />{localizedText(primaryOrder.ctaText ?? orderingPresentation[primaryOrder.type]?.cta ?? primaryOrder.name, currentLocale)}</a> : null}
           </div>
