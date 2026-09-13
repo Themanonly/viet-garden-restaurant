@@ -92,8 +92,8 @@ export const siteNavigation: NavigationItem[] = [
 
 export const routePaths: Record<Exclude<NavigationItem['route'], 'home'>, string> = {
   menu: 'menu',
-  location: '#contact-information',
-  contact: '#contact-information',
+  location: '#location-details',
+  contact: '#contact-details',
 };
 
 export function routeHref(locale: string, route: NavigationItem['route']): string {
