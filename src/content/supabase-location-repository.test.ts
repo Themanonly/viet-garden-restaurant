@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { restaurantProfile } from './restaurant';
-import { defaultLocationId, locationProfileId, type Location } from './location';
+import { locationIdForProfile, type Location } from './location';
 import { LocationService } from './location-service';
 import { SupabaseLocationRepository } from './supabase-location-repository';
 import type { SupabaseDatabaseClient } from './supabase-database';
@@ -26,7 +27,7 @@ class FakeLocationDatabase implements SupabaseDatabaseClient {
     assert.equal(name, 'replace_restaurant_locations');
     this.rpcCalls.push({ name, body });
     const payload = body as { p_profile_id: string; p_locations: Record<string, unknown>[] };
-    assert.equal(payload.p_profile_id, locationProfileId);
+    assert.equal(payload.p_profile_id, restaurantProfile.id);
     this.rows = structuredClone(payload.p_locations);
     return undefined as T;
   }
@@ -49,8 +50,8 @@ function row(location: Location): Record<string, unknown> {
 
 function seededLocation(): Location {
   return {
-    id: defaultLocationId,
-    profileId: locationProfileId,
+    id: locationIdForProfile(restaurantProfile.id),
+    profileId: restaurantProfile.id,
     name: structuredClone(restaurantProfile.name),
     address: structuredClone(restaurantProfile.address),
     city: restaurantProfile.city,
@@ -64,27 +65,27 @@ function seededLocation(): Location {
 
 test('Supabase location repository maps deterministic rows and preserves initialized empty state', async () => {
   const database = new FakeLocationDatabase();
-  const repository = new SupabaseLocationRepository(database);
+  const repository = new SupabaseLocationRepository(restaurantProfile.id, database);
   assert.deepEqual(await repository.getState(), { initialized: true, locations: [] });
   database.rows = [row({ ...seededLocation(), id: 'location-z', sortOrder: 1, isPrimary: false, enabled: false }), row(seededLocation())];
-  assert.deepEqual((await repository.listLocations()).map((location) => location.id), [defaultLocationId, 'location-z']);
+  assert.deepEqual((await repository.listLocations()).map((location) => location.id), [locationIdForProfile(restaurantProfile.id), 'location-z']);
 });
 
 test('Supabase location replacement uses the atomic location RPC and maps rows back', async () => {
   const database = new FakeLocationDatabase();
-  const repository = new SupabaseLocationRepository(database);
-  const service = new LocationService(repository, locationProfileId);
+  const repository = new SupabaseLocationRepository(restaurantProfile.id, database);
+  const service = new LocationService(repository, restaurantProfile.id);
   await repository.replaceLocations([seededLocation()]);
   const locations = await service.listLocations();
-  assert.equal(locations[0]?.id, defaultLocationId);
+  assert.equal(locations[0]?.id, locationIdForProfile(restaurantProfile.id));
   assert.equal(database.rpcCalls.length, 1);
-  assert.deepEqual(database.rpcCalls[0]?.body, { p_profile_id: locationProfileId, p_locations: [row(seededLocation())] });
+  assert.deepEqual(database.rpcCalls[0]?.body, { p_profile_id: restaurantProfile.id, p_locations: [row(seededLocation())] });
 });
 
 test('Supabase location mutations preserve primary and ordering invariants', async () => {
   const database = new FakeLocationDatabase();
-  const repository = new SupabaseLocationRepository(database);
-  const service = new LocationService(repository, locationProfileId);
+  const repository = new SupabaseLocationRepository(restaurantProfile.id, database);
+  const service = new LocationService(repository, restaurantProfile.id);
   await repository.replaceLocations([seededLocation()]);
   const second = await service.createLocation({
     name: { fr: 'Second', en: 'Second', ar: 'الثاني' },
@@ -98,4 +99,11 @@ test('Supabase location mutations preserve primary and ordering invariants', asy
   assert.equal((await service.listLocations()).filter((location) => location.isPrimary).length, 1);
   assert.equal((await service.listLocations()).find((location) => location.id === second.id)?.isPrimary, true);
   assert.equal(database.rows.length, 2);
+});
+
+test('generic Location RPC migration has no fixed restaurant guard', async () => {
+  const migration = await readFile('supabase/migrations/0013_generic_restaurant_locations_rpc.sql', 'utf8');
+  assert.doesNotMatch(migration, /viet-garden-casablanca/);
+  assert.match(migration, /where id = p_profile_id for update/);
+  assert.match(migration, /Replacement locations must belong to this profile/);
 });

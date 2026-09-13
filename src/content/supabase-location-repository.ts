@@ -1,4 +1,4 @@
-import { locationProfileId, validateLocationCollection, type Location, type LocationStoreState } from './location';
+import { validateLocationCollection, type Location, type LocationStoreState } from './location';
 import { createSupabaseDatabaseClient, type SupabaseDatabaseClient } from './supabase-database';
 import type { LocationRepository } from './location-repository';
 
@@ -54,7 +54,9 @@ function toRow(location: Location): LocationRow {
 }
 
 export class SupabaseLocationRepository implements LocationRepository {
-  constructor(private readonly database: SupabaseDatabaseClient = createSupabaseDatabaseClient(), private readonly profileId = locationProfileId) {}
+  constructor(private readonly profileId: string, private readonly database: SupabaseDatabaseClient = createSupabaseDatabaseClient()) {
+    if (!profileId.trim()) throw new Error('A profile ID is required for Location persistence.');
+  }
 
   async getState(): Promise<LocationStoreState> {
     const rows = await this.database.select<LocationRow>('restaurant_locations', `select=*&${queryEquals('profile_id', this.profileId)}&order=sort_order.asc,id.asc`);
@@ -78,6 +80,6 @@ export class SupabaseLocationRepository implements LocationRepository {
   }
 }
 
-export function createSupabaseLocationRepository(database?: SupabaseDatabaseClient): SupabaseLocationRepository {
-  return new SupabaseLocationRepository(database);
+export function createSupabaseLocationRepository(profileId: string, database?: SupabaseDatabaseClient): SupabaseLocationRepository {
+  return new SupabaseLocationRepository(profileId, database);
 }

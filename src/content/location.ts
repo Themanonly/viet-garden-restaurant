@@ -1,8 +1,5 @@
 import type { LocalizedText } from './models';
 
-export const locationProfileId = 'viet-garden-casablanca';
-export const defaultLocationId = 'location-viet-garden-casablanca';
-
 export interface Location {
   id: string;
   profileId: string;
@@ -37,6 +34,12 @@ export class LocationValidationError extends Error {
 export function normalizeGoogleMapsUrl(value: string | undefined): string | undefined {
   const normalized = value?.trim();
   return normalized || undefined;
+}
+
+export function locationIdForProfile(profileId: string): string {
+  const normalized = profileId.trim();
+  if (!normalized) throw new Error('A profile ID is required to derive a location ID.');
+  return `location-${normalized}`;
 }
 
 export function compareLocations(first: Location, second: Location): number {
@@ -111,7 +114,7 @@ export function seedLocationFromProfile(profile: {
   googleMapsUrl?: string;
 }): Location {
   return {
-    id: defaultLocationId,
+    id: locationIdForProfile(profile.id),
     profileId: profile.id,
     name: structuredClone(profile.name),
     address: structuredClone(profile.address),

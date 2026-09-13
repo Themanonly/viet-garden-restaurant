@@ -1,8 +1,7 @@
 import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { restaurantProfile } from './restaurant';
 import { getApplicationDataProvider } from './application-provider';
-import { LocationValidationError, seedLocationFromProfile, validateLocationCollection, type Location, type LocationStoreState } from './location';
+import { LocationValidationError, validateLocationCollection, type Location, type LocationStoreState } from './location';
 import { createSupabaseLocationRepository } from './supabase-location-repository';
 
 export interface LocationRepository {
@@ -11,6 +10,11 @@ export interface LocationRepository {
   replaceLocations(locations: Location[]): Promise<void>;
   ensureSeeded(): Promise<Location[]>;
 }
+
+export type LocationRepositoryOptions = {
+  filePath?: string;
+  seed?: Location;
+};
 
 export class LocationPersistenceError extends Error {
   constructor(public readonly code: 'read-failed' | 'write-failed' | 'invalid-persisted-locations', message: string) {
@@ -32,6 +36,16 @@ function clone<T>(value: T): T {
   return structuredClone(value);
 }
 
+function validateStoredLocations(locations: Location[]): Location[] {
+  const byProfile = new Map<string, Location[]>();
+  locations.forEach((location) => {
+    const profileLocations = byProfile.get(location.profileId) ?? [];
+    profileLocations.push(location);
+    byProfile.set(location.profileId, profileLocations);
+  });
+  return [...byProfile.values()].flatMap((profileLocations) => validateLocationCollection(profileLocations));
+}
+
 async function enqueue<T>(filePath: string, action: () => Promise<T>): Promise<T> {
   const previous = operationQueues.get(filePath) ?? Promise.resolve();
   const current = previous.catch(() => undefined).then(action);
@@ -44,13 +58,20 @@ async function enqueue<T>(filePath: string, action: () => Promise<T>): Promise<T
 }
 
 export class FileLocationRepository implements LocationRepository {
-  constructor(private readonly filePath: string = defaultLocationStatePath) {}
+  constructor(
+    private readonly filePath: string = defaultLocationStatePath,
+    private readonly profileId: string,
+    private readonly seed?: Location,
+  ) {
+    if (!profileId.trim()) throw new Error('A profile ID is required for Location persistence.');
+    if (seed && seed.profileId !== profileId) throw new Error('Location seed must belong to the active profile.');
+  }
 
   async getState(): Promise<LocationStoreState> {
     try {
       const persisted = JSON.parse(await readFile(this.filePath, 'utf8')) as Partial<PersistedLocationState>;
       if (persisted.initialized !== true || !Array.isArray(persisted.locations)) throw new LocationPersistenceError('invalid-persisted-locations', 'Persisted location state is invalid.');
-      return { initialized: true, locations: clone(validateLocationCollection(persisted.locations)) };
+      return { initialized: true, locations: clone(validateStoredLocations(persisted.locations).filter((location) => location.profileId === this.profileId)) };
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { initialized: false, locations: [] };
       if (error instanceof LocationPersistenceError) throw error;
@@ -68,16 +89,35 @@ export class FileLocationRepository implements LocationRepository {
   async ensureSeeded(): Promise<Location[]> {
     return enqueue(this.filePath, async () => {
       const state = await this.getState();
-      if (state.initialized) return clone(state.locations);
-      const locations = validateLocationCollection([seedLocationFromProfile(restaurantProfile)]);
+      if (state.initialized && state.locations.length > 0) return clone(state.locations);
+      if (!this.seed) return [];
+      const current = await this.readAllLocations();
+      const locations = validateStoredLocations([...current, this.seed]);
       await this.writeState(locations);
-      return clone(locations);
+      return clone([this.seed]);
     });
   }
 
   async replaceLocations(locations: Location[]): Promise<void> {
+    if (locations.some((location) => location.profileId !== this.profileId)) throw new LocationPersistenceError('invalid-persisted-locations', 'Replacement locations must belong to the active profile.');
     const nextLocations = validateLocationCollection(locations);
-    await enqueue(this.filePath, () => this.writeState(nextLocations));
+    await enqueue(this.filePath, async () => {
+      const current = await this.readAllLocations();
+      await this.writeState([...current.filter((location) => location.profileId !== this.profileId), ...nextLocations]);
+    });
+  }
+
+  private async readAllLocations(): Promise<Location[]> {
+    try {
+      const persisted = JSON.parse(await readFile(this.filePath, 'utf8')) as Partial<PersistedLocationState>;
+      if (persisted.initialized !== true || !Array.isArray(persisted.locations)) throw new LocationPersistenceError('invalid-persisted-locations', 'Persisted location state is invalid.');
+      return validateStoredLocations(persisted.locations);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+      if (error instanceof LocationPersistenceError) throw error;
+      if (error instanceof LocationValidationError) throw new LocationPersistenceError('invalid-persisted-locations', error.message);
+      throw new LocationPersistenceError('read-failed', `Locations could not be read from ${this.filePath}.`);
+    }
   }
 
   private async writeState(locations: Location[]): Promise<void> {
@@ -87,7 +127,7 @@ export class FileLocationRepository implements LocationRepository {
     let movedPrevious = false;
     try {
       await mkdir(directory, { recursive: true });
-      const state: PersistedLocationState = { initialized: true, locations: clone(validateLocationCollection(locations)) };
+      const state: PersistedLocationState = { initialized: true, locations: clone(validateStoredLocations(locations)) };
       await writeFile(temporaryPath, JSON.stringify(state, null, 2), 'utf8');
       try {
         await rename(this.filePath, backupPath);
@@ -108,7 +148,8 @@ export class FileLocationRepository implements LocationRepository {
   }
 }
 
-export function createLocationRepository(filePath?: string): LocationRepository {
-  if (getApplicationDataProvider() === 'supabase') return createSupabaseLocationRepository();
-  return new FileLocationRepository(filePath);
+export function createLocationRepository(profileId: string, options: LocationRepositoryOptions = {}): LocationRepository {
+  if (!profileId.trim()) throw new Error('A profile ID is required for Location persistence.');
+  if (getApplicationDataProvider() === 'supabase') return createSupabaseLocationRepository(profileId);
+  return new FileLocationRepository(options.filePath, profileId, options.seed);
 }
