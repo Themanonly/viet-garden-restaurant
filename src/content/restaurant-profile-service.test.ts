@@ -97,3 +97,24 @@ test('business profile update persists generic identity, location, and settings 
   assert.equal(profile.orderingChannels[0]?.type, 'glovo');
   await assert.rejects(service.updateProfile({ googleMapsUrl: 'not-a-url' }), /valid HTTP or HTTPS URL/);
 });
+
+test('partial business information updates preserve hidden profile settings and collections', async () => {
+  const { service } = await serviceWithTempProfile();
+  const before = await service.updateProfile({
+    country: 'Morocco',
+    region: 'Casablanca-Settat',
+    businessType: 'restaurant',
+    settings: { currency: 'MAD', timezone: 'Africa/Casablanca', supportedLocales: ['fr', 'en', 'ar'] },
+  });
+
+  const after = await service.updateProfile({ city: 'Casablanca Centre' });
+
+  assert.equal(after.city, 'Casablanca Centre');
+  assert.equal(after.country, before.country);
+  assert.equal(after.region, before.region);
+  assert.equal(after.businessType, before.businessType);
+  assert.deepEqual(after.settings, before.settings);
+  assert.deepEqual(after.contacts, before.contacts);
+  assert.deepEqual(after.socialLinks, before.socialLinks);
+  assert.deepEqual(after.orderingChannels, before.orderingChannels);
+});

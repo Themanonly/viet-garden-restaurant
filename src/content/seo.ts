@@ -34,8 +34,13 @@ export const localeAlternates: Record<Locale, string> = {
   ar: '/ar',
 };
 
-export function getSeoMetadata(locale: Locale, route: ContentRoute): SeoMetadata {
-  return seoMetadata[basePaths(locale, route)] ?? seoMetadata['/fr'];
+export function getSeoMetadata(locale: Locale, route: ContentRoute, profile: RestaurantProfile = restaurantProfile): SeoMetadata {
+  const fallback = seoMetadata[basePaths(locale, route)] ?? seoMetadata['/fr'];
+  return {
+    ...fallback,
+    title: route === 'home' ? profile.name : fallback.title,
+    description: profile.description,
+  };
 }
 
 export function getRestaurantJsonLd(locale: Locale, profile: RestaurantProfile = restaurantProfile) {
@@ -44,7 +49,7 @@ export function getRestaurantJsonLd(locale: Locale, profile: RestaurantProfile =
     '@context': 'https://schema.org',
     '@type': 'Restaurant',
     '@id': `${baseUrl}/#restaurant`,
-    name: 'Viet Garden Restaurant & Coffee',
+    name: localizedText(profile.name, locale),
     alternateName: ['Viet Garden', 'VIET GARDEN RESTAURANT & COFEE'],
     description: localizedText(profile.description, locale),
     url: `${baseUrl}/${locale}`,
@@ -58,7 +63,7 @@ export function getRestaurantJsonLd(locale: Locale, profile: RestaurantProfile =
       streetAddress: localizedText(profile.address, locale),
       addressLocality: profile.city,
       postalCode: profile.postalCode,
-      addressCountry: 'MA',
+      addressCountry: profile.country ?? 'MA',
     },
     geo: {
       '@type': 'GeoCoordinates',

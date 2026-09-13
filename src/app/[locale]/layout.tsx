@@ -19,7 +19,8 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> | { locale: string } }): Promise<Metadata> {
   const { locale: rawLocale } = await Promise.resolve(params);
   const locale = supportedLocales.includes(rawLocale as Locale) ? (rawLocale as Locale) : 'fr';
-  const seo = getSeoMetadata(locale, 'home');
+  const profile = await createRestaurantProfileRepository().getProfile();
+  const seo = getSeoMetadata(locale, 'home', profile);
   const favicon = getMediaAsset('brand-favicon');
   const titleText = localizedText(seo.title, locale);
   const descriptionText = localizedText(seo.description, locale);

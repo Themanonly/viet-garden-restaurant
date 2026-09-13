@@ -4,7 +4,7 @@ import { readAdminProfile, saveAdminProfile } from '../../../content/admin-menu-
 
 export default function AdminBusinessPage() {
   return (
-    <AdminShell title="Business Information">
+    <AdminShell title="Business Information" description="Update the name, website description, and location customers see. Phone numbers, social links, ordering, media, and opening hours have their own sections.">
       <BusinessProfileEditor serverActions={{ readProfile: readAdminProfile, saveProfile: saveAdminProfile }} />
     </AdminShell>
   );

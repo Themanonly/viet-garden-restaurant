@@ -46,6 +46,9 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
   const menuLabel = localizedText({ fr: 'Menu', en: 'Menu', ar: 'القائمة' }, currentLocale);
   const managedProfile = profile ?? restaurantProfile;
   const resolveMedia = (id?: string) => resolvePlatformMedia(media, id);
+  const locationAddress = localizedText(managedProfile.address, currentLocale);
+  const locationMeta = `${managedProfile.city} ${managedProfile.postalCode}`.trim();
+  const locationIncludesMeta = locationAddress.includes(managedProfile.city) && locationAddress.includes(managedProfile.postalCode);
   const primaryOrder = managedProfile.orderingChannels.filter((channel) => channel.enabled).sort((first, second) => first.sortOrder - second.sortOrder)[0];
   const closeMenu = () => {
     if (menuRef.current) menuRef.current.open = false;
@@ -147,11 +150,13 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
 
           <div id={footerAnchorIds.location} className="footer-column">
             <p className="footer-label">{localizedText({ fr: 'Nous trouver', en: 'Find Us', ar: 'موقعنا' }, currentLocale)}</p>
-            <a href={managedProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link">
-              <PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresse', en: 'Address', ar: 'العنوان' }, currentLocale)} /> {localizedText(managedProfile.address, currentLocale)}
-            </a>
-            <a href={managedProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-link-strong">
-              <PlatformIcon kind="location" className="footer-platform-icon" label="Google Maps" /> {localizedText({ fr: 'Google Maps', en: 'Google Maps', ar: 'خرائط Google' }, currentLocale)}
+            <a href={managedProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-location-card" aria-label={`${locationAddress}${locationIncludesMeta ? '' : `, ${locationMeta}`}, ${localizedText({ fr: 'Ouvrir dans Google Maps', en: 'Open in Google Maps', ar: 'فتح في خرائط Google' }, currentLocale)}`}>
+              <PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresse', en: 'Address', ar: 'العنوان' }, currentLocale)} />
+              <span className="footer-location-copy">
+                <span>{locationAddress}</span>
+                {!locationIncludesMeta ? <span className="footer-location-meta">{locationMeta}</span> : null}
+                <span className="footer-location-action">{localizedText({ fr: 'Ouvrir dans Google Maps', en: 'Open in Google Maps', ar: 'فتح في خرائط Google' }, currentLocale)}</span>
+              </span>
             </a>
             {primaryOrder ? <a href={primaryOrder.url} target="_blank" rel="noreferrer" className="footer-link footer-link-strong"><PlatformMediaIcon asset={resolveMedia(primaryOrder.logoMediaId)} className="footer-ordering-image" />{localizedText(primaryOrder.ctaText ?? orderingPresentation[primaryOrder.type]?.cta ?? primaryOrder.name, currentLocale)}</a> : null}
           </div>

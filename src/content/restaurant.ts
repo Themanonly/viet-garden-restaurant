@@ -67,7 +67,7 @@ export const restaurantProfile: RestaurantProfile = {
 export const homepageHero = {
   brandName: { fr: 'Viet Garden Restaurant & Coffee', en: 'Viet Garden Restaurant & Coffee', ar: 'Viet Garden Restaurant & Coffee' },
   eyebrow: { fr: 'Cuisine vietnamienne · Casablanca', en: 'Vietnamese cuisine · Casablanca', ar: 'مطبخ فيتنامي · الدار البيضاء' },
-  statement: restaurantProfile.description,
+  statement: { fr: 'Une cuisine vietnamienne et asiatique à Casablanca.', en: 'Vietnamese and Asian cuisine in Casablanca.', ar: 'مطبخ فيتنامي وآسيوي في الدار البيضاء.' },
   primaryAction: { fr: 'Réserver une table', en: 'Reserve a table', ar: 'احجز طاولة' },
   secondaryAction: { fr: 'Découvrir le menu', en: 'Explore the menu', ar: 'اكتشف القائمة' },
 };

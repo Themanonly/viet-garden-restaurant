@@ -9,6 +9,7 @@ type LocalizedFieldGroupProps = {
   onChange: (locale: 'fr' | 'en' | 'ar', value: string) => void;
   required?: boolean;
   fieldPrefix?: string;
+  helpText?: string;
 };
 
 const fields = [
@@ -17,10 +18,11 @@ const fields = [
   { locale: 'ar' as const, label: 'AR', direction: 'rtl' as const },
 ];
 
-export function LocalizedFieldGroup({ id, label, value, errors = {}, onChange, required = false, fieldPrefix = '' }: LocalizedFieldGroupProps) {
+export function LocalizedFieldGroup({ id, label, value, errors = {}, onChange, required = false, fieldPrefix = '', helpText }: LocalizedFieldGroupProps) {
   return (
     <fieldset className="admin-localized-group">
       <legend>{label}</legend>
+      {helpText ? <p className="admin-field-help">{helpText}</p> : null}
       <div className="admin-localized-fields">
         {fields.map((field) => {
           const fieldId = `${fieldPrefix}${id}-${field.locale}`;
