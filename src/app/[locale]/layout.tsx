@@ -4,6 +4,7 @@ import { getRestaurantJsonLd, getSeoMetadata, localeAlternates } from '../../con
 import { localizedText, locales, type Locale } from '../../content/models';
 import { getMediaAsset } from '../../content/media';
 import { createRestaurantProfileRepository } from '../../content/restaurant-profile-repository';
+import { LocaleDocumentAttributes } from '../../components/locale-document-attributes';
 
 const supportedLocales = locales;
 
@@ -70,7 +71,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const jsonLd = getRestaurantJsonLd(locale, profile);
 
   return (
-    <div lang={locale} dir={dir}>
+    <div dir={dir}>
+      <LocaleDocumentAttributes locale={locale} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
