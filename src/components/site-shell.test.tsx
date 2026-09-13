@@ -25,3 +25,14 @@ test('footer anchors target Contact Information and Find Us independently', () =
   assert.equal((markup.match(/id="contact-details"/g) ?? []).length, 1);
   assert.equal((markup.match(/id="location-details"/g) ?? []).length, 1);
 });
+
+test('localized location cards keep one destination without duplicating complete addresses', () => {
+  for (const locale of ['fr', 'en', 'ar'] as const) {
+    const profile = structuredClone(restaurantProfile);
+    const markup = renderToStaticMarkup(<SiteShell locale={locale} profile={profile}><main>Home</main></SiteShell>);
+    const locationMarkup = markup.match(/<div id="location-details"[\s\S]*?<\/div><\/div>/)?.[0] ?? '';
+    assert.equal((locationMarkup.match(/https:\/\/www\.google\.com\/maps/g) ?? []).length, 1);
+    assert.match(locationMarkup, locale === 'ar' ? /فتح في خرائط Google/ : locale === 'fr' ? /Ouvrir dans Google Maps/ : /Open in Google Maps/);
+    assert.doesNotMatch(locationMarkup, /class="footer-location-meta"/);
+  }
+});
