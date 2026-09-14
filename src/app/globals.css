@@ -482,7 +482,7 @@ button, input, select, textarea {
 .admin-save-state.is-error, .admin-save-state.is-validation-error { color: #9a4d3a; }
 .admin-validation-summary { display: none; }
 .admin-editor, .admin-category-manager, .admin-item-manager { display: grid; gap: 1rem; max-width: 1240px; width: 100%; min-width: 0; }
-.admin-status-overview, .admin-section, .admin-validation-summary.is-visible { padding: 1.25rem; border: 1px solid rgba(32, 39, 32, 0.12); background: #fbfcfa; }
+.admin-status-overview, .admin-section, .admin-validation-summary.is-visible { min-width: 0; box-sizing: border-box; padding: 1.25rem; border: 1px solid rgba(32, 39, 32, 0.12); background: #fbfcfa; }
 .admin-status-overview { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .admin-status-overview h2 { margin: 0; font-size: 1.8rem; letter-spacing: 0.06em; }
 .admin-status-value.is-open { color: #356b49; }
@@ -519,6 +519,9 @@ button, input, select, textarea {
 .admin-field textarea { width: 100%; box-sizing: border-box; resize: vertical; padding: 0.6rem; border: 1px solid rgba(32, 39, 32, 0.2); border-radius: 0.25rem; background: #fff; color: #202720; }
 .admin-field-error { margin: 0; color: #9a4d3a; font-size: 0.72rem; line-height: 1.35; }
 .admin-field-help { margin: -0.2rem 0 0.65rem; color: #687369; font-size: 0.78rem; line-height: 1.45; }
+.admin-visual-selector-field { min-width: 0; }
+.admin-visual-selector-actions { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.admin-visual-selector-actions select { flex: 1 1 auto; width: 100%; min-width: 0; box-sizing: border-box; padding: 0.5rem; border-radius: 0.25rem; }
 .admin-validation-summary.is-visible { display: block; border-color: rgba(154, 77, 58, 0.35); background: #fff8f5; }
 .admin-validation-summary p { margin: 0.5rem 0; }
 .admin-validation-summary ul { margin: 0.5rem 0 0; padding-left: 1.2rem; }
@@ -665,6 +668,7 @@ button, input, select, textarea {
   .admin-localized-fields { grid-template-columns: 1fr; }
   .admin-editor-actions { align-items: stretch; flex-direction: column; }
   .admin-editor-actions .admin-save-state { min-height: 1.2rem; }
+  .admin-visual-selector-actions { align-items: stretch; flex-direction: column; }
   .admin-list-toolbar { align-items: stretch; flex-direction: column; }
   .admin-list-toolbar .admin-primary-button { width: 100%; }
   .admin-category-row { grid-template-columns: 2rem minmax(0, 1fr); align-items: start; gap: 0.75rem; }

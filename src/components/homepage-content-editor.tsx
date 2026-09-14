@@ -139,13 +139,12 @@ function MediaSelectorField({
         ) : null}
       </div>
 
-      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+      <div className="admin-visual-selector-actions">
         <select
           id={`visual-${id}`}
           className="admin-select"
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value || null)}
-          style={{ flex: 1, padding: '0.5rem', borderRadius: 4 }}
         >
           <option value="">-- Choose from Media Library --</option>
           {filteredList.map((asset) => (
