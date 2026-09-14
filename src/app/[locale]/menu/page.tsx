@@ -3,7 +3,8 @@ import { createMenuRepository } from '../../../content/menu-repository';
 import { menuUiCopy, type MenuCategory, type MenuItem } from '../../../content/menu';
 import { createMediaRepository } from '../../../content/media-repository';
 import { localizedText, locales, type Locale, type MediaAsset } from '../../../content/models';
-import { getSeoMetadata, localeAlternates } from '../../../content/seo';
+import { getSeoMetadata, getSiteOrigin, localeAlternates } from '../../../content/seo';
+import { createRestaurantProfileRepository } from '../../../content/restaurant-profile-repository';
 import { PublicRestaurantStatus } from '../../../components/public-restaurant-status';
 
 export const dynamic = 'force-dynamic';
@@ -11,11 +12,14 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale: rawLocale } = await params;
   const locale = (locales as readonly string[]).includes(rawLocale) ? rawLocale as Locale : 'fr';
-  const seo = getSeoMetadata(locale, 'menu');
+  const profile = await createRestaurantProfileRepository().getProfile();
+  const seo = getSeoMetadata(locale, 'menu', profile);
   const titleText = localizedText(seo.title, locale);
   const descriptionText = localizedText(seo.description, locale);
-  const siteUrl = `https://viet-garden.netlify.app/${locale}/menu`;
+  const siteOrigin = getSiteOrigin();
+  const siteUrl = `${siteOrigin}/${locale}/menu`;
   const ogLocale = locale === 'fr' ? 'fr_FR' : locale === 'ar' ? 'ar_MA' : 'en_US';
+  const siteName = localizedText(profile.name, locale);
 
   return {
     title: titleText,
@@ -28,15 +32,15 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       title: titleText,
       description: descriptionText,
       url: siteUrl,
-      siteName: 'Viet Garden Restaurant & Coffee',
+      siteName: siteName,
       locale: ogLocale,
       type: 'website',
       images: [
         {
-          url: 'https://viet-garden.netlify.app/media/viet-garden-hero-poster.jpg',
+          url: `${siteOrigin}/media/viet-garden-hero-poster.jpg`,
           width: 1200,
           height: 630,
-          alt: 'Menu Viet Garden Restaurant & Coffee Casablanca',
+          alt: `Menu ${siteName} ${profile.city}`.trim(),
         },
       ],
     },
@@ -44,7 +48,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       card: 'summary_large_image',
       title: titleText,
       description: descriptionText,
-      images: ['https://viet-garden.netlify.app/media/viet-garden-hero-poster.jpg'],
+      images: [`${siteOrigin}/media/viet-garden-hero-poster.jpg`],
     },
   };
 }

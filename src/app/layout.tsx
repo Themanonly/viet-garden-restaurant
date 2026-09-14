@@ -2,9 +2,10 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { locales, type Locale } from '../content/models';
+import { getSiteOrigin } from '../content/seo';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://viet-garden.netlify.app'),
+  metadataBase: new URL(getSiteOrigin()),
   title: 'Viet Garden Restaurant & Coffee',
   description: 'Official website foundation for Viet Garden Restaurant & Coffee.',
 };

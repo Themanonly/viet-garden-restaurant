@@ -1,5 +1,30 @@
 import { localizedText, type ContentRoute, type Locale, type LocalizedText, type RestaurantProfile } from './models';
 import { restaurantProfile } from './restaurant';
+import type { Location } from './location';
+import type { MenuAvailability, MenuWeekday } from './menu';
+
+export const DEFAULT_SITE_ORIGIN = 'https://viet-garden.netlify.app';
+
+const weekdaysList: MenuWeekday[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+export function getSiteOrigin(overrideUrl?: string): string {
+  const candidate = overrideUrl
+    ?? process.env.NEXT_PUBLIC_SITE_URL
+    ?? process.env.URL
+    ?? DEFAULT_SITE_ORIGIN;
+
+  try {
+    const trimmed = candidate.trim();
+    if (!trimmed) return DEFAULT_SITE_ORIGIN;
+    const url = new URL(trimmed);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return DEFAULT_SITE_ORIGIN;
+    }
+    return url.origin;
+  } catch {
+    return DEFAULT_SITE_ORIGIN;
+  }
+}
 
 export interface SeoMetadata {
   title: LocalizedText;
@@ -35,52 +60,114 @@ export const localeAlternates: Record<Locale, string> = {
 };
 
 export function getSeoMetadata(locale: Locale, route: ContentRoute, profile: RestaurantProfile = restaurantProfile): SeoMetadata {
-  const fallback = seoMetadata[basePaths(locale, route)] ?? seoMetadata['/fr'];
+  const localizedName = profile.name;
+  const title: LocalizedText = route === 'home'
+    ? localizedName
+    : {
+        fr: `Menu | ${localizedName.fr || localizedName.en || localizedName.ar || 'Viet Garden'}`,
+        en: `Menu | ${localizedName.en || localizedName.fr || localizedName.ar || 'Viet Garden'}`,
+        ar: `القائمة | ${localizedName.ar || localizedName.fr || localizedName.en || 'فييت غاردن'}`,
+      };
+
   return {
-    ...fallback,
-    title: route === 'home' ? profile.name : fallback.title,
+    title,
     description: profile.description,
+    canonicalPath: basePaths(locale, route),
+    indexable: true,
   };
 }
 
-export function getRestaurantJsonLd(locale: Locale, profile: RestaurantProfile = restaurantProfile) {
-  const baseUrl = 'https://viet-garden.netlify.app';
+const schemaDayMap: Record<MenuWeekday, string> = {
+  monday: 'Monday',
+  tuesday: 'Tuesday',
+  wednesday: 'Wednesday',
+  thursday: 'Thursday',
+  friday: 'Friday',
+  saturday: 'Saturday',
+  sunday: 'Sunday',
+};
+
+export function getRestaurantJsonLd(
+  locale: Locale,
+  profile: RestaurantProfile = restaurantProfile,
+  locations: Location[] = [],
+  availability?: MenuAvailability,
+  siteOriginOverride?: string,
+) {
+  const siteOrigin = getSiteOrigin(siteOriginOverride);
+  const primaryPhone = profile.contacts
+    ?.filter((contact) => contact.enabled && (contact.type === 'phone' || contact.type === 'whatsapp'))
+    .sort((first, second) => Number(Boolean(second.primary)) - Number(Boolean(first.primary)) || first.sortOrder - second.sortOrder)[0]?.value;
+
+  const enabledLocations = locations.filter((loc) => loc.enabled);
+  const primaryLocation = enabledLocations.find((loc) => loc.isPrimary) ?? enabledLocations[0];
+
+  let address: Record<string, string> | undefined;
+  if (primaryLocation) {
+    address = {
+      '@type': 'PostalAddress',
+      streetAddress: localizedText(primaryLocation.address, locale),
+      addressLocality: primaryLocation.city,
+      postalCode: primaryLocation.postalCode,
+      addressCountry: profile.country ?? 'MA',
+    };
+  } else if (profile.address && (profile.address[locale] || profile.city || profile.postalCode)) {
+    address = {
+      '@type': 'PostalAddress',
+      streetAddress: localizedText(profile.address, locale),
+      addressLocality: profile.city ?? '',
+      postalCode: profile.postalCode ?? '',
+      addressCountry: profile.country ?? 'MA',
+    };
+  }
+
+  const openingHoursSpecification: Array<{
+    '@type': string;
+    dayOfWeek: string;
+    opens: string;
+    closes: string;
+  }> = [];
+
+  if (availability?.schedule) {
+    for (const day of weekdaysList) {
+      const periods = availability.schedule[day] ?? [];
+      for (const period of periods) {
+        if (period.opensAt && period.closesAt) {
+          openingHoursSpecification.push({
+            '@type': 'OpeningHoursSpecification',
+            dayOfWeek: schemaDayMap[day],
+            opens: period.opensAt,
+            closes: period.closesAt,
+          });
+        }
+      }
+    }
+  }
+
+  const socialUrls = (profile.socialLinks ?? [])
+    .filter((s) => s.enabled)
+    .sort((first, second) => first.sortOrder - second.sortOrder)
+    .map((s) => s.url);
+
   return {
     '@context': 'https://schema.org',
     '@type': 'Restaurant',
-    '@id': `${baseUrl}/#restaurant`,
+    '@id': `${siteOrigin}/#restaurant`,
     name: localizedText(profile.name, locale),
     alternateName: ['Viet Garden', 'VIET GARDEN RESTAURANT & COFEE'],
     description: localizedText(profile.description, locale),
-    url: `${baseUrl}/${locale}`,
-    image: `${baseUrl}/media/viet-garden-hero-poster.jpg`,
-    logo: `${baseUrl}/media/viet-garden-logo.png`,
-    telephone: profile.contacts.filter((contact) => contact.enabled && contact.type === 'phone').sort((first, second) => Number(Boolean(second.primary)) - Number(Boolean(first.primary)) || first.sortOrder - second.sortOrder)[0]?.value,
+    url: `${siteOrigin}/${locale}`,
+    image: `${siteOrigin}/media/viet-garden-hero-poster.jpg`,
+    logo: `${siteOrigin}/media/viet-garden-logo.png`,
+    ...(primaryPhone ? { telephone: primaryPhone } : {}),
     priceRange: '$$',
-    servableCuisine: ['Vietnamese', 'Asian', 'Sushi'],
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: localizedText(profile.address, locale),
-      addressLocality: profile.city,
-      postalCode: profile.postalCode,
-      addressCountry: profile.country ?? 'MA',
-    },
-    geo: {
-      '@type': 'GeoCoordinates',
-      latitude: 33.6098413,
-      longitude: -7.5647156,
-    },
-    sameAs: profile.socialLinks.filter((s) => s.enabled).sort((first, second) => first.sortOrder - second.sortOrder).map((s) => s.url),
-    openingHoursSpecification: [
-      {
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-        opens: '13:00',
-        closes: '22:15',
-      },
-    ],
-    hasMenu: `${baseUrl}/${locale}/menu`,
-    acceptsReservations: 'True',
+    servesCuisine: ['Vietnamese', 'Asian', 'Sushi'],
+    ...(address ? { address } : {}),
+    ...(socialUrls.length > 0 ? { sameAs: socialUrls } : {}),
+    ...(openingHoursSpecification.length > 0 ? { openingHoursSpecification } : {}),
+    hasMenu: `${siteOrigin}/${locale}/menu`,
+    acceptsReservations: true,
   };
 }
+
 
