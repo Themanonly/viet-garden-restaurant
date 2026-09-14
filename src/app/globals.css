@@ -1820,10 +1820,6 @@ button, input, select, textarea {
   font-weight: 700;
 }
 
-.homepage-shell .identity-location::after {
-  content: "↗";
-}
-
 .homepage-featured {
   padding: clamp(4.5rem, 9vw, 7rem) clamp(1rem, 4vw, 4rem);
   background: var(--color-espresso);

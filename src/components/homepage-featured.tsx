@@ -20,7 +20,7 @@ export function HomepageFeatured({ section, items, mediaById, locale }: { sectio
           {section.description ? <p className="homepage-featured-description">{localizedText(section.description, locale)}</p> : null}
         </div>
         <Link className="homepage-featured-action" href={routeHref(locale, 'menu')}>
-          {localizedText(copy.action, locale)}<span aria-hidden="true">↗</span>
+          {localizedText(copy.action, locale)}
         </Link>
       </div>
 
