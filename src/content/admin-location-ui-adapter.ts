@@ -2,13 +2,17 @@ import { AdminApplicationError, type AdminErrorInfo } from './admin-menu-service
 import { LocationValidationError, type Location } from './location';
 import { createLocationRepository } from './location-repository';
 import { LocationService, type LocationCreateInput, type LocationUpdateInput } from './location-service';
-import { restaurantProfile } from './restaurant';
+import type { RestaurantProfileRepository } from './restaurant-profile-repository';
 
 export type AdminLocationDto = Location;
 export type AdminLocationCreateInput = LocationCreateInput;
 export type AdminLocationUpdateInput = LocationUpdateInput;
 
 function clone<T>(value: T): T { return structuredClone(value); }
+
+export async function resolveActiveLocationProfileId(profileRepository: RestaurantProfileRepository): Promise<string> {
+  return (await profileRepository.getProfile()).id;
+}
 
 function toAdminError(error: unknown): AdminApplicationError {
   if (error instanceof LocationValidationError) {
@@ -20,17 +24,22 @@ function toAdminError(error: unknown): AdminApplicationError {
 }
 
 export class AdminLocationUiAdapter {
-  private readonly service = new LocationService(createLocationRepository(restaurantProfile.id), restaurantProfile.id);
+  constructor(private readonly profileRepository: RestaurantProfileRepository) {}
 
-  private async run<T>(action: () => Promise<T>): Promise<T> {
-    try { return clone(await action()); } catch (error) { throw toAdminError(error); }
+  private async getService(): Promise<LocationService> {
+    const profileId = await resolveActiveLocationProfileId(this.profileRepository);
+    return new LocationService(createLocationRepository(profileId), profileId);
   }
 
-  async listLocations(): Promise<AdminLocationDto[]> { return this.run(() => this.service.listLocations()); }
-  async createLocation(input: AdminLocationCreateInput): Promise<AdminLocationDto> { return this.run(() => this.service.createLocation(clone(input))); }
-  async updateLocation(id: string, input: AdminLocationUpdateInput): Promise<AdminLocationDto> { return this.run(() => this.service.updateLocation(id, clone(input))); }
-  async setEnabled(id: string, enabled: boolean): Promise<AdminLocationDto> { return this.run(() => this.service.setEnabled(id, enabled)); }
-  async setPrimary(id: string): Promise<AdminLocationDto> { return this.run(() => this.service.setPrimary(id)); }
-  async reorderLocations(ids: string[]): Promise<AdminLocationDto[]> { return this.run(() => this.service.reorderLocations([...ids])); }
-  async deleteLocation(id: string): Promise<void> { await this.run(() => this.service.removeLocation(id)); }
+  private async run<T>(action: (service: LocationService) => Promise<T>): Promise<T> {
+    try { return clone(await action(await this.getService())); } catch (error) { throw toAdminError(error); }
+  }
+
+  async listLocations(): Promise<AdminLocationDto[]> { return this.run((service) => service.listLocations()); }
+  async createLocation(input: AdminLocationCreateInput): Promise<AdminLocationDto> { return this.run((service) => service.createLocation(clone(input))); }
+  async updateLocation(id: string, input: AdminLocationUpdateInput): Promise<AdminLocationDto> { return this.run((service) => service.updateLocation(id, clone(input))); }
+  async setEnabled(id: string, enabled: boolean): Promise<AdminLocationDto> { return this.run((service) => service.setEnabled(id, enabled)); }
+  async setPrimary(id: string): Promise<AdminLocationDto> { return this.run((service) => service.setPrimary(id)); }
+  async reorderLocations(ids: string[]): Promise<AdminLocationDto[]> { return this.run((service) => service.reorderLocations([...ids])); }
+  async deleteLocation(id: string): Promise<void> { await this.run((service) => service.removeLocation(id)); }
 }

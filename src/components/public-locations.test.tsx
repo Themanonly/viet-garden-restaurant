@@ -19,3 +19,24 @@ test('public locations renders enabled locations in sort order with primary and 
 test('public locations hides completely when there are no enabled locations', () => {
   assert.equal(renderToStaticMarkup(<PublicLocations locations={[]} locale="ar" />), '');
 });
+
+test('single location uses singular heading, omits primary badge, and supports missing Maps URL', () => {
+  const single = location('single', 0, true);
+  single.googleMapsUrl = undefined;
+  const markup = renderToStaticMarkup(<PublicLocations locations={[single]} locale="en" />);
+  assert.match(markup, /Our location/);
+  assert.doesNotMatch(markup, /Primary/);
+  assert.doesNotMatch(markup, /Open in Google Maps/);
+  assert.doesNotMatch(markup, /href="undefined"/);
+});
+
+test('multiple locations keep valid Maps actions while missing Maps cards stay non-clickable', () => {
+  const missing = location('missing', 0, true);
+  missing.googleMapsUrl = undefined;
+  const valid = location('valid', 1);
+  const markup = renderToStaticMarkup(<PublicLocations locations={[missing, valid]} locale="fr" />);
+  assert.match(markup, /Nos adresses/);
+  assert.match(markup, /Principal/);
+  assert.equal((markup.match(/Ouvrir dans Google Maps/g) ?? []).length, 1);
+  assert.doesNotMatch(markup, /href="undefined"/);
+});

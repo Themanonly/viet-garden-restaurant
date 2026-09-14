@@ -8,7 +8,6 @@ import { PublicWeeklySchedule } from '../../components/public-weekly-schedule';
 import { createRestaurantProfileRepository } from '../../content/restaurant-profile-repository';
 import { createLocationRepository } from '../../content/location-repository';
 import { LocationService } from '../../content/location-service';
-import { restaurantProfile } from '../../content/restaurant';
 import { PublicLocations } from '../../components/public-locations';
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +31,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const heroVideo = getMediaAsset('hero-visual');
   const identityImage = getMediaAsset('identity-visual');
   const profile = await createRestaurantProfileRepository().getProfile();
-  const locations = await new LocationService(createLocationRepository(restaurantProfile.id), restaurantProfile.id).listEnabledLocations();
+  const locations = await new LocationService(createLocationRepository(profile.id), profile.id).listEnabledLocations();
   const phone = profile.contacts.find((item) => item.enabled && (item.type === 'phone' || item.type === 'whatsapp'));
   const menu = await createMenuRepository().getMenu();
   const businessCopy = getHomepageBusinessCopy(profile, locale);

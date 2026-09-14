@@ -108,3 +108,19 @@ test('ordering content stays out of the Find Us column and missing media falls b
   assert.doesNotMatch(markup, /onError=|broken-image|img[^>]*src=""/);
   assert.match(markup, /id="ordering-details"/);
 });
+
+test('single missing Maps URL renders footer location content without a false destination', () => {
+  const profile = structuredClone(restaurantProfile);
+  const markup = renderToStaticMarkup(<SiteShell locale="en" profile={profile} locations={[{ id: 'location-no-map', profileId: profile.id, name: profile.name, address: profile.address, city: profile.city, postalCode: profile.postalCode, isPrimary: true, enabled: true, sortOrder: 0 }]}><main>Home</main></SiteShell>);
+  const locationMarkup = markup.match(/<div id="location-details"[\s\S]*?<\/div>/)?.[0] ?? '';
+  assert.doesNotMatch(locationMarkup, /href="undefined"|Open in Google Maps/);
+  assert.match(locationMarkup, /80 Bd Moulay Slimane/);
+});
+
+test('multiple footer locations use the dedicated Locations action', () => {
+  const first = { id: 'a', profileId: restaurantProfile.id, name: restaurantProfile.name, address: restaurantProfile.address, city: restaurantProfile.city, postalCode: restaurantProfile.postalCode, googleMapsUrl: restaurantProfile.googleMapsUrl, isPrimary: true, enabled: true, sortOrder: 0 };
+  const second = { ...first, id: 'b', isPrimary: false, sortOrder: 1 };
+  const markup = renderToStaticMarkup(<SiteShell locale="en" profile={restaurantProfile} locations={[first, second]}><main>Home</main></SiteShell>);
+  assert.match(markup, /href="\/en#locations"/);
+  assert.doesNotMatch(markup, /Open in Google Maps/);
+});

@@ -1,26 +1,26 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { unwrapAdminAction } from '../content/admin-action-client';
 import type { AdminActionResult } from '../content/admin-menu-actions';
 import type { LocalizedText, Locale, RestaurantProfile } from '../content/models';
 import { LocalizedFieldGroup } from './localized-field-group';
 
-type BusinessDraft = Pick<RestaurantProfile, 'name' | 'description' | 'address' | 'city' | 'postalCode' | 'googleMapsUrl'>;
+type BusinessDraft = Pick<RestaurantProfile, 'name' | 'description'>;
 
 type ServerActions = {
   readProfile: () => Promise<AdminActionResult<RestaurantProfile>>;
   saveProfile: (input: Partial<BusinessDraft>) => Promise<AdminActionResult<RestaurantProfile>>;
 };
 
+export const businessInformationLocationHref = '/admin/locations';
+export const businessInformationEditableFields = ['name', 'description'] as const;
+
 function emptyDraft(): BusinessDraft {
   return {
     name: { fr: '', en: '', ar: '' },
     description: { fr: '', en: '', ar: '' },
-    address: { fr: '', en: '', ar: '' },
-    city: '',
-    postalCode: '',
-    googleMapsUrl: '',
   };
 }
 
@@ -28,10 +28,6 @@ function cloneDraft(profile: RestaurantProfile): BusinessDraft {
   return {
     name: { ...profile.name },
     description: { ...profile.description },
-    address: { ...profile.address },
-    city: profile.city,
-    postalCode: profile.postalCode,
-    googleMapsUrl: profile.googleMapsUrl ?? '',
   };
 }
 
@@ -103,28 +99,12 @@ export function BusinessProfileEditor({ serverActions }: { serverActions: Server
       <section className="admin-section" aria-labelledby="business-location-title">
         <div className="admin-section-heading">
           <div>
-            <p className="admin-eyebrow">Address and location</p>
-            <h2 id="business-location-title">Help customers find you</h2>
-            <p className="admin-section-description">The address appears in the Find Us section. The map link opens Google Maps.</p>
+            <p className="admin-eyebrow">Locations</p>
+            <h2 id="business-location-title">Manage customer locations</h2>
+            <p className="admin-section-description">Addresses, cities, postal codes, and Maps links are managed in the Locations section.</p>
           </div>
         </div>
-
-        <LocalizedFieldGroup id="business-address" label="Address" helpText="Enter the address customers should see for this language." value={draft.address} required onChange={(locale, value) => updateDraft({ ...draft, address: updateLocalizedText(draft.address, locale, value) })} />
-
-        <div className="admin-item-editor-grid" style={{ marginTop: '1rem' }}>
-          <label className="admin-field">
-            <span>City or town</span>
-            <input value={draft.city} required onChange={(event) => updateDraft({ ...draft, city: event.target.value })} />
-          </label>
-          <label className="admin-field">
-            <span>Postal code</span>
-            <input value={draft.postalCode} required onChange={(event) => updateDraft({ ...draft, postalCode: event.target.value })} />
-          </label>
-          <label className="admin-field">
-            <span>Google Maps link</span>
-            <input value={draft.googleMapsUrl ?? ''} onChange={(event) => updateDraft({ ...draft, googleMapsUrl: event.target.value })} />
-          </label>
-        </div>
+        <Link className="admin-secondary-button" href={businessInformationLocationHref}>Manage locations</Link>
       </section>
 
       <div className="admin-editor-actions">

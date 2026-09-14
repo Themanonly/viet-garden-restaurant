@@ -11,6 +11,7 @@ import { resolvePlatformMedia } from '../content/platform-media';
 import { PlatformMediaIcon } from './platform-media-icon';
 import { PlatformIcon } from './platform-icon';
 import { seedLocationFromProfile, type Location } from '../content/location';
+import { getLocationAddressParts } from '../content/location-presentation';
 
 function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash }: { localeOptions: Locale[]; currentLocale: Locale; pathname: string | null; currentHash: string }) {
   return (
@@ -35,6 +36,12 @@ function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash 
       </div>
     </details>
   );
+}
+
+function renderSingleLocation(location: Location, locale: Locale) {
+  const parts = getLocationAddressParts(location, locale);
+  const content = <><PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresse', en: 'Address', ar: 'العنوان' }, locale)} /><span className="footer-location-copy"><span>{parts.address}</span>{parts.meta ? <span className="footer-location-meta">{parts.meta}</span> : null}</span></>;
+  return location.googleMapsUrl ? <a href={location.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-location-card" aria-label={parts.address}>{content}<span className="footer-location-action">{localizedText({ fr: 'Ouvrir dans Google Maps', en: 'Open in Google Maps', ar: 'فتح في خرائط Google' }, locale)}</span></a> : <div className="footer-link footer-location-card">{content}</div>;
 }
 
 export function SiteShell({ locale, logo, profile, media = [], locations, children }: { locale: Locale; logo?: MediaAsset; profile?: RestaurantProfile; media?: MediaAsset[]; locations?: Location[]; children: ReactNode }) {
@@ -152,10 +159,7 @@ export function SiteShell({ locale, logo, profile, media = [], locations, childr
 
           {primaryLocation ? <div id={footerAnchorIds.location} className="footer-column">
             <p className="footer-label">{localizedText({ fr: 'Nous trouver', en: 'Find Us', ar: 'موقعنا' }, currentLocale)}</p>
-            {managedLocations.length === 1 ? <a href={primaryLocation.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-location-card" aria-label={localizedText(primaryLocation.address, currentLocale)}>
-              <PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresse', en: 'Address', ar: 'العنوان' }, currentLocale)} />
-              <span className="footer-location-copy"><span>{localizedText(primaryLocation.address, currentLocale)}</span>{localizedText(primaryLocation.address, currentLocale).includes(primaryLocation.postalCode) && (localizedText(primaryLocation.address, currentLocale).includes(primaryLocation.city) || (currentLocale === 'ar' && /[,،]/.test(localizedText(primaryLocation.address, currentLocale)))) ? null : <span className="footer-location-meta">{primaryLocation.city} {primaryLocation.postalCode}</span>}<span className="footer-location-action">{localizedText({ fr: 'Ouvrir dans Google Maps', en: 'Open in Google Maps', ar: 'فتح في خرائط Google' }, currentLocale)}</span></span>
-            </a> : <a href={localizedPathname(currentLocale, pathname, '#locations')} className="footer-link footer-location-card"><PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresses', en: 'Locations', ar: 'الفروع' }, currentLocale)} /><span className="footer-location-copy"><span>{localizedText({ fr: 'Voir toutes nos adresses', en: 'View all locations', ar: 'عرض جميع فروعنا' }, currentLocale)}</span><span className="footer-location-meta">{primaryLocation.city}</span></span></a>}
+            {managedLocations.length === 1 ? renderSingleLocation(primaryLocation, currentLocale) : <a href={localizedPathname(currentLocale, pathname, '#locations')} className="footer-link footer-location-card"><PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresses', en: 'Locations', ar: 'الفروع' }, currentLocale)} /><span className="footer-location-copy"><span>{localizedText({ fr: 'Voir toutes nos adresses', en: 'View all locations', ar: 'عرض جميع فروعنا' }, currentLocale)}</span><span className="footer-location-meta">{primaryLocation.city}</span></span></a>}
           </div> : null}
 
           {enabledOrderingChannels.length > 0 ? (
