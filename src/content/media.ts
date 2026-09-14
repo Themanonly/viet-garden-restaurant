@@ -42,7 +42,7 @@ export const mediaCatalog: MediaAsset[] = [
     id: 'identity-visual',
     type: 'image',
     source: 'local',
-    reference: '/media/viet-garden-identity.jpg',
+    reference: '/media/viet-garden-identity-premium.jpg',
     alt: {
       fr: 'Intérieur chaleureux de Viet Garden Restaurant & Coffee à Casablanca',
       en: 'Warm interior of Viet Garden Restaurant & Coffee in Casablanca',

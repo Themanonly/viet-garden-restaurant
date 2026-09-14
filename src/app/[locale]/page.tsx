@@ -9,6 +9,8 @@ import { createRestaurantProfileRepository } from '../../content/restaurant-prof
 import { createLocationRepository } from '../../content/location-repository';
 import { LocationService } from '../../content/location-service';
 import { PublicLocations } from '../../components/public-locations';
+import { HomepageFeatured } from '../../components/homepage-featured';
+import { createMediaRepository } from '../../content/media-repository';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,9 +37,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const phone = profile.contacts.find((item) => item.enabled && (item.type === 'phone' || item.type === 'whatsapp'));
   const menu = await createMenuRepository().getMenu();
   const businessCopy = getHomepageBusinessCopy(profile, locale);
+  const featuredSection = [...menu.featuredSections].filter((section) => section.active).sort((first, second) => first.sortOrder - second.sortOrder)[0];
+  const featuredItems = featuredSection
+    ? featuredSection.itemIds.map((itemId) => menu.items.find((item) => item.id === itemId)).filter((item): item is NonNullable<typeof item> => Boolean(item?.active)).slice(0, 3)
+    : [];
+  const mediaRepository = createMediaRepository();
+  const featuredMedia = await Promise.all([...new Set(featuredItems.flatMap((item) => item.mediaId ? [item.mediaId] : []))].map((mediaId) => mediaRepository.getMedia(mediaId)));
+  const featuredMediaById = new Map(featuredMedia.filter((asset): asset is NonNullable<typeof asset> => Boolean(asset)).map((asset) => [asset.id, asset]));
 
   return (
-    <main id="top" className="page-shell">
+    <main id="top" className="page-shell homepage-shell">
       <section className="hero" aria-labelledby="hero-title">
         <div className="hero-media" aria-hidden="true">
           <img src="/media/viet-garden-hero-poster.jpg" alt="" className="hero-poster" />
@@ -91,6 +100,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           {locations.length > 0 ? <a className="identity-location" href="#locations">{locations.length === 1 ? localizedText({ fr: 'Voir notre adresse', en: 'View our location', ar: 'عرض موقعنا' }, locale) : localizedText({ fr: `Découvrir nos ${locations.length} adresses`, en: `Explore our ${locations.length} locations`, ar: `استكشف فروعنا (${locations.length})` }, locale)}</a> : null}
         </div>
       </section>
+
+      <HomepageFeatured section={featuredSection} items={featuredItems} mediaById={featuredMediaById} locale={locale} />
 
       <section className="schedule-section" aria-labelledby="schedule-section-title">
         <PublicWeeklySchedule availability={menu.availability} locale={locale} />
