@@ -25,9 +25,22 @@ test('single location uses singular heading, omits primary badge, and supports m
   single.googleMapsUrl = undefined;
   const markup = renderToStaticMarkup(<PublicLocations locations={[single]} locale="en" />);
   assert.match(markup, /Our location/);
+  assert.match(markup, /Find Us/);
+  assert.notEqual(markup.indexOf('Find Us'), markup.indexOf('Our location'));
   assert.doesNotMatch(markup, /Primary/);
   assert.doesNotMatch(markup, /Open in Google Maps/);
   assert.doesNotMatch(markup, /href="undefined"/);
+});
+
+test('locations heading hierarchy remains distinct in all locales', () => {
+  for (const locale of ['fr', 'en', 'ar'] as const) {
+    const markup = renderToStaticMarkup(<PublicLocations locations={[location('single', 0)]} locale={locale} />);
+    const eyebrow = locale === 'fr' ? 'Nous trouver' : locale === 'en' ? 'Find Us' : 'اعثر علينا';
+    const heading = locale === 'fr' ? 'Notre adresse' : locale === 'en' ? 'Our location' : 'موقعنا';
+    assert.match(markup, new RegExp(`<p class="identity-eyebrow">${eyebrow}</p>`));
+    assert.match(markup, new RegExp(`<h2 id="locations-title">${heading}</h2>`));
+    assert.notEqual(eyebrow, heading);
+  }
 });
 
 test('multiple locations keep valid Maps actions while missing Maps cards stay non-clickable', () => {

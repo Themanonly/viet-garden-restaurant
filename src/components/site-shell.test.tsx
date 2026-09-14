@@ -19,6 +19,7 @@ test('footer anchors target Contact Information and Find Us independently', () =
 
   assert.match(markup, /<div id="contact-details" class="footer-column">[\s\S]*?Contact Information/);
   assert.match(markup, /<div id="location-details" class="footer-column">[\s\S]*?Find Us[\s\S]*?Test Street[\s\S]*?Rabat 10000[\s\S]*?Open in Google Maps/);
+  assert.match(markup, /class="footer-location-copy">[\s\S]*?Test Street[\s\S]*?Open in Google Maps[\s\S]*?<\/span>/);
   assert.equal((markup.match(/https:\/\/maps\.google\.com\/\?q=test/g) ?? []).length, 1);
   assert.match(markup, /A Vietnamese table in Casablanca, generous plates, and moments made to share\./);
   assert.match(markup, /<div class="footer-column"><p class="footer-label">Social Links<\/p>[\s\S]*?<\/div><div id="location-details"/);

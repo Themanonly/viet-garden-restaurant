@@ -40,8 +40,9 @@ function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash 
 
 function renderSingleLocation(location: Location, locale: Locale) {
   const parts = getLocationAddressParts(location, locale);
-  const content = <><PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresse', en: 'Address', ar: 'العنوان' }, locale)} /><span className="footer-location-copy"><span>{parts.address}</span>{parts.meta ? <span className="footer-location-meta">{parts.meta}</span> : null}</span></>;
-  return location.googleMapsUrl ? <a href={location.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-location-card" aria-label={parts.address}>{content}<span className="footer-location-action">{localizedText({ fr: 'Ouvrir dans Google Maps', en: 'Open in Google Maps', ar: 'فتح في خرائط Google' }, locale)}</span></a> : <div className="footer-link footer-location-card">{content}</div>;
+  const copy = <span className="footer-location-copy"><span>{parts.address}</span>{parts.meta ? <span className="footer-location-meta">{parts.meta}</span> : null}{location.googleMapsUrl ? <span className="footer-location-action">{localizedText({ fr: 'Ouvrir dans Google Maps', en: 'Open in Google Maps', ar: 'فتح في خرائط Google' }, locale)}</span> : null}</span>;
+  const icon = <PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresse', en: 'Address', ar: 'العنوان' }, locale)} />;
+  return location.googleMapsUrl ? <a href={location.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-location-card" aria-label={parts.address}>{icon}{copy}</a> : <div className="footer-link footer-location-card">{icon}{copy}</div>;
 }
 
 export function SiteShell({ locale, logo, profile, media = [], locations, children }: { locale: Locale; logo?: MediaAsset; profile?: RestaurantProfile; media?: MediaAsset[]; locations?: Location[]; children: ReactNode }) {
