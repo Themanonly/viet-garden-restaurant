@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
-import { AdminAuthorizationError, requireAdmin } from '../../../../../content/admin-auth';
+import { AdminAuthorizationError, requireAdminRequest } from '../../../../../content/admin-auth';
 import { AdminApplicationError, type AdminErrorInfo } from '../../../../../content/admin-menu-service';
 import { getAdminMenuUiAdapter } from '../../../../../content/admin-ui-adapter-instance';
 import { validateUploadedMedia, type UploadedMediaType } from '../../../../../content/media-upload-storage';
@@ -59,7 +59,7 @@ function jsonResponse(result: { ok: true; value: unknown } | { ok: false; error:
 
 export async function POST(request: Request) {
   try {
-    await requireAdmin();
+    await requireAdminRequest(request);
     const form = await request.formData();
     const fileEntry = form.get('file');
     if (!(fileEntry instanceof File)) return jsonResponse({ ok: false, error: failure('media-file-required', 'Select an image or MP4 video file.', 'file') }, 400);

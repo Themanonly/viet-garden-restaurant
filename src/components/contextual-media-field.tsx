@@ -18,7 +18,7 @@ export async function uploadContextualMedia(file: File, sortOrder = 0): Promise<
   form.append('alt', JSON.stringify({ fr: name, en: name, ar: name }));
   form.append('visible', 'true');
   form.append('sortOrder', String(sortOrder));
-  const response = await fetch('/api/admin/media/upload', { method: 'POST', body: form });
+  const response = await fetch('/api/admin/media/upload', { method: 'POST', body: form, credentials: 'same-origin' });
   const result = await response.json() as AdminActionResult<AdminUiMediaDto>;
   return unwrapAdminAction(result);
 }
