@@ -11,6 +11,7 @@ import { LocationService } from '../../content/location-service';
 import { PublicLocations } from '../../components/public-locations';
 import { HomepageFeatured } from '../../components/homepage-featured';
 import { createMediaRepository } from '../../content/media-repository';
+import { createSiteSettingsRepository, defaultHomepageContent, type HomepageContent } from '../../content/site-settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,11 +19,14 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-export function getHomepageBusinessCopy(profile: RestaurantProfile, locale: Locale) {
+export function getHomepageBusinessCopy(profile: RestaurantProfile, locale: Locale, content: HomepageContent = defaultHomepageContent) {
   return {
     heroName: localizedText(profile.name, locale),
-    heroStatement: localizedText(homepageHero.statement, locale),
+    heroEyebrow: localizedText(content.heroEyebrow, locale),
+    heroStatement: localizedText(content.heroStatement, locale),
     about: localizedText(profile.description, locale),
+    identityEyebrow: localizedText(content.identityEyebrow, locale),
+    identityTitle: localizedText(content.identityTitle, locale),
     address: localizedText(profile.address, locale),
   };
 }
@@ -33,10 +37,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const heroVideo = getMediaAsset('hero-visual');
   const identityImage = getMediaAsset('identity-visual');
   const profile = await createRestaurantProfileRepository().getProfile();
+  const homepageContent = await createSiteSettingsRepository().getSettings().then((settings) => settings.homepageContent).catch(() => defaultHomepageContent);
   const locations = await new LocationService(createLocationRepository(profile.id), profile.id).listEnabledLocations();
   const phone = profile.contacts.find((item) => item.enabled && (item.type === 'phone' || item.type === 'whatsapp'));
   const menu = await createMenuRepository().getMenu();
-  const businessCopy = getHomepageBusinessCopy(profile, locale);
+  const businessCopy = getHomepageBusinessCopy(profile, locale, homepageContent);
   const featuredSection = [...menu.featuredSections].filter((section) => section.active).sort((first, second) => first.sortOrder - second.sortOrder)[0];
   const featuredItems = featuredSection
     ? featuredSection.itemIds.map((itemId) => menu.items.find((item) => item.id === itemId)).filter((item): item is NonNullable<typeof item> => Boolean(item?.active)).slice(0, 3)
@@ -68,7 +73,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
 
         <div className="hero-content">
-          <p className="hero-eyebrow">{localizedText(homepageHero.eyebrow, locale)}</p>
+          <p className="hero-eyebrow">{businessCopy.heroEyebrow}</p>
           <h1 id="hero-title">{businessCopy.heroName}</h1>
           <p className="hero-statement">{businessCopy.heroStatement}</p>
           <PublicRestaurantStatus availability={menu.availability} locale={locale} />
@@ -94,8 +99,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           ) : null}
         </div>
         <div className="identity-content">
-          <p className="identity-eyebrow">{localizedText(homepageIdentity.eyebrow, locale)}</p>
-          <h2 id="identity-title">{localizedText(homepageIdentity.title, locale)}</h2>
+          <p className="identity-eyebrow">{businessCopy.identityEyebrow}</p>
+          <h2 id="identity-title">{businessCopy.identityTitle}</h2>
           <p className="identity-copy">{businessCopy.about}</p>
           {locations.length > 0 ? <a className="identity-location" href="#locations">{locations.length === 1 ? localizedText({ fr: 'Voir notre adresse', en: 'View our location', ar: 'عرض موقعنا' }, locale) : localizedText({ fr: `Découvrir nos ${locations.length} adresses`, en: `Explore our ${locations.length} locations`, ar: `استكشف فروعنا (${locations.length})` }, locale)}</a> : null}
         </div>

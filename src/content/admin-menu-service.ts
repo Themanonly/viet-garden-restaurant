@@ -99,7 +99,7 @@ export interface AdminAvailabilityInput extends MenuAvailability {}
 export type AdminMediaCreateInput = MediaAsset;
 export type AdminMediaReplacementInput = Omit<MediaAsset, 'id'>;
 
-export type AdminResource = 'menu' | 'availability' | 'category' | 'item' | 'featured-section' | 'media' | 'contact' | 'social' | 'ordering' | 'location' | 'promotion' | 'profile';
+export type AdminResource = 'menu' | 'availability' | 'category' | 'item' | 'featured-section' | 'media' | 'contact' | 'social' | 'ordering' | 'location' | 'homepage' | 'promotion' | 'profile';
 
 export interface AdminErrorInfo {
   code: string;

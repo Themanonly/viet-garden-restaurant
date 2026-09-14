@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { defaultSiteSettings, FileSiteSettingsRepository, SiteSettingsService } from './site-settings';
+import { defaultHomepageContent, defaultSiteSettings, FileSiteSettingsRepository, SiteSettingsService } from './site-settings';
 
 test('site settings default to a public and operational website', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'viet-garden-site-settings-'));
@@ -48,4 +48,23 @@ test('site settings validation blocks impossible state transitions', async () =>
   const service = new SiteSettingsService(repository);
 
   await assert.rejects(() => service.updateSettings({ publicWebsiteEnabled: false, maintenanceMode: true }), /Maintenance mode requires the public website to remain enabled/);
+});
+
+test('homepage content persists through a fresh local repository instance', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'viet-garden-site-settings-homepage-'));
+  const filePath = path.join(directory, 'site-settings.json');
+  const repository = new FileSiteSettingsRepository(filePath);
+  const service = new SiteSettingsService(repository);
+  const updated = { ...defaultHomepageContent, heroStatement: { ...defaultHomepageContent.heroStatement, en: 'Managed homepage promise.' } };
+  await service.updateSettings({ homepageContent: updated });
+  assert.equal((await new FileSiteSettingsRepository(filePath).getSettings()).homepageContent.heroStatement.en, 'Managed homepage promise.');
+});
+
+test('invalid homepage content is rejected without replacing valid settings', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'viet-garden-site-settings-invalid-homepage-'));
+  const filePath = path.join(directory, 'site-settings.json');
+  const repository = new FileSiteSettingsRepository(filePath);
+  const service = new SiteSettingsService(repository);
+  await assert.rejects(service.updateSettings({ homepageContent: { ...defaultHomepageContent, identityTitle: { ...defaultHomepageContent.identityTitle, ar: '' } } }), /Homepage content field identityTitle/);
+  assert.equal((await repository.getSettings()).homepageContent.identityTitle.ar, defaultHomepageContent.identityTitle.ar);
 });

@@ -23,6 +23,7 @@ test('admin navigation exposes the admin destinations grouped by area', () => {
     '/admin/ordering',
     '/admin/categories',
     '/admin/items',
+    '/admin/homepage',
     '/admin/featured',
     '/admin/promotions',
     '/admin/media',
@@ -36,5 +37,6 @@ test('admin navigation resolves the active destination and preserves route compa
   assert.equal(getActiveAdminNavigationItem('/admin/contact')?.label, 'Contacts & Social');
   assert.equal(getActiveAdminNavigationItem('/admin/ordering')?.label, 'Ordering Channels');
   assert.equal(getActiveAdminNavigationItem('/admin/locations')?.label, 'Locations');
+  assert.equal(getActiveAdminNavigationItem('/admin/homepage')?.label, 'Homepage');
   assert.equal(getActiveAdminNavigationItem('/unknown'), undefined);
 });

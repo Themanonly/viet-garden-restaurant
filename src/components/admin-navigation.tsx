@@ -34,6 +34,7 @@ export const adminNavigationGroups: AdminNavigationGroup[] = [
   {
     label: 'Content',
     items: [
+      { href: '/admin/homepage', label: 'Homepage' },
       { href: '/admin/featured', label: 'Featured Content' },
       { href: '/admin/promotions', label: 'Promotions' },
     ],

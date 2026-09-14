@@ -10,6 +10,8 @@ import type { AdminUiPromotionCreateInput, AdminUiPromotionUpdateInput } from '.
 import { getAdminPromotionUiAdapter } from './admin-promotion-adapter-instance';
 import type { AdminLocationCreateInput, AdminLocationUpdateInput } from './admin-location-ui-adapter';
 import { getAdminLocationUiAdapter } from './admin-location-adapter-instance';
+import type { HomepageContent } from './site-settings';
+import { getAdminHomepageUiAdapter } from './admin-homepage-adapter-instance';
 
 export type AdminActionResult<T> = { ok: true; value: T } | { ok: false; error: AdminErrorInfo };
 
@@ -186,6 +188,9 @@ export async function setAdminLocationEnabled(id: string, enabled: boolean) { re
 export async function setAdminLocationPrimary(id: string) { return execute('location', () => getAdminLocationUiAdapter().setPrimary(id)); }
 export async function reorderAdminLocations(ids: string[]) { return execute('location', () => getAdminLocationUiAdapter().reorderLocations(ids)); }
 export async function deleteAdminLocation(id: string) { return execute('location', () => getAdminLocationUiAdapter().deleteLocation(id)); }
+
+export async function readAdminHomepageContent() { return execute('homepage', () => getAdminHomepageUiAdapter().getHomepageContent()); }
+export async function saveAdminHomepageContent(content: HomepageContent) { return execute('homepage', () => getAdminHomepageUiAdapter().updateHomepageContent(content)); }
 
 export async function readAdminPromotions() { return execute('promotion', () => getAdminPromotionUiAdapter().listPromotions()); }
 export async function createAdminPromotion(input: AdminUiPromotionCreateInput) { return execute('promotion', () => getAdminPromotionUiAdapter().createPromotion(input)); }
