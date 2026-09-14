@@ -1209,8 +1209,9 @@ button, input, select, textarea {
 .identity-location:focus-visible { color: var(--color-copper); }
 
 .locations-section {
-  padding: clamp(3.5rem, 8vw, 6.5rem) 0;
+  padding: clamp(4rem, 9vw, 7.5rem) 0;
   border-top: 1px solid var(--color-outline);
+  border-bottom: 1px solid var(--color-outline);
   background: var(--color-stone);
 }
 
@@ -1220,16 +1221,17 @@ button, input, select, textarea {
   margin-inline: auto;
 }
 
-.locations-heading { margin-bottom: clamp(2rem, 4vw, 3rem); }
+.locations-heading { max-width: 42rem; margin-bottom: clamp(2.25rem, 5vw, 3.75rem); }
 .locations-heading h2 { margin: 0; color: var(--color-coffee); font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 3.8vw, 3.2rem); font-weight: 400; line-height: 1.1; }
 .locations-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem; }
-.location-card { display: grid; align-content: start; gap: 0.75rem; min-width: 0; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid var(--color-outline); background: var(--color-shell); }
+.location-card { display: grid; align-content: start; gap: 0.85rem; min-width: 0; padding: clamp(1.5rem, 3.5vw, 2.25rem); border: 1px solid var(--color-outline); border-top: 3px solid var(--color-copper); background: var(--color-shell); box-shadow: 0 0.75rem 2rem rgba(48, 35, 26, 0.07); transition: transform var(--transition-fast), box-shadow var(--transition-fast); }
+.location-card:hover { transform: translateY(-2px); box-shadow: 0 1rem 2.25rem rgba(48, 35, 26, 0.11); }
 .location-card-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
 .location-card h3 { margin: 0; color: var(--color-coffee); font-family: Georgia, "Times New Roman", serif; font-size: 1.5rem; font-weight: 400; overflow-wrap: anywhere; }
 .location-primary-badge { flex: 0 0 auto; color: var(--color-copper); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; }
 .location-card-address, .location-card-meta { margin: 0; color: var(--color-text-soft); line-height: 1.6; overflow-wrap: anywhere; }
 .location-card-meta { font-size: 0.9rem; }
-.location-map-link { justify-self: start; margin-top: 0.5rem; color: var(--color-forest-deep); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.location-map-link { justify-self: start; margin-top: 0.6rem; color: var(--color-forest-deep); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .location-map-link:hover, .location-map-link:focus-visible { color: var(--color-copper); }
 
 .schedule-section {
@@ -1480,18 +1482,21 @@ button, input, select, textarea {
   display: flex;
   align-items: flex-start;
   gap: 0.45rem;
-  max-width: 18rem;
+  width: min(100%, 18rem);
+  max-width: 100%;
   min-width: 0;
 }
 
 .footer-location-copy {
+  flex: 1 1 auto;
   display: grid;
   gap: 0.2rem;
+  width: 0;
   min-width: 0;
 }
 
 .footer-location-meta { color: rgba(255, 250, 245, 0.62); font-size: 0.82rem; }
-.footer-location-action { color: var(--color-gold); font-size: 0.78rem; font-weight: 600; }
+.footer-location-action { display: block; color: var(--color-gold); font-size: 0.78rem; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
 
 @media (max-width: 820px) {
   .header-inner {
