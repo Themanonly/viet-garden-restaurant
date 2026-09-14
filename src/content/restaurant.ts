@@ -64,23 +64,9 @@ export const restaurantProfile: RestaurantProfile = {
   ],
 };
 
-export const homepageHero = {
-  brandName: { fr: 'Viet Garden Restaurant & Coffee', en: 'Viet Garden Restaurant & Coffee', ar: 'Viet Garden Restaurant & Coffee' },
-  eyebrow: { fr: 'Cuisine vietnamienne · Casablanca', en: 'Vietnamese cuisine · Casablanca', ar: 'مطبخ فيتنامي · الدار البيضاء' },
-  statement: { fr: 'Une cuisine vietnamienne et asiatique à Casablanca.', en: 'Vietnamese and Asian cuisine in Casablanca.', ar: 'مطبخ فيتنامي وآسيوي في الدار البيضاء.' },
+export const homepageActions = {
   primaryAction: { fr: 'Réserver une table', en: 'Reserve a table', ar: 'احجز طاولة' },
   secondaryAction: { fr: 'Découvrir le menu', en: 'Explore the menu', ar: 'اكتشف القائمة' },
-};
-
-export const homepageIdentity = {
-  eyebrow: { fr: 'L’expérience Viet Garden', en: 'The Viet Garden experience', ar: 'تجربة فييت غاردن' },
-  title: { fr: 'Une table vietnamienne à Casablanca', en: 'A Vietnamese table in Casablanca', ar: 'مائدة فيتنامية في الدار البيضاء' },
-  paragraphs: {
-    fr: 'Viet Garden Restaurant & Coffee vous accueille autour d’une cuisine vietnamienne et asiatique, dans un cadre pensé pour les repas en famille, les déjeuners et les soirées conviviales.',
-    en: 'Viet Garden Restaurant & Coffee welcomes you to Vietnamese and Asian cuisine in a setting shaped for family meals, relaxed lunches, and convivial evenings.',
-    ar: 'يستقبلكم Viet Garden Restaurant & Coffee مع المطبخ الفيتنامي والآسيوي، في أجواء مناسبة لوجبات العائلة والغداء الهادئ والأمسيات الودية.',
-  },
-  location: { fr: '80 Bd Moulay Slimane · Casablanca', en: '80 Bd Moulay Slimane · Casablanca', ar: '80 شارع مولاي سليمان · الدار البيضاء' },
 };
 
 export const siteNavigation: NavigationItem[] = [

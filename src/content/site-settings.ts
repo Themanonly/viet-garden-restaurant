@@ -40,7 +40,7 @@ export interface SiteSettingsRepository {
 }
 
 export class SiteSettingsValidationError extends Error {
-  constructor(message: string) {
+  constructor(message: string, public readonly fields: Array<{ path: string; message: string }> = []) {
     super(message);
     this.name = 'SiteSettingsValidationError';
   }
@@ -74,12 +74,16 @@ function normalizeSettings(value: Partial<SiteSettings> | undefined): SiteSettin
     throw new SiteSettingsValidationError('Maintenance mode requires the public website to remain enabled.');
   }
 
-  const homepageContent = candidate.homepageContent;
+  const homepageContent = { ...defaultHomepageContent, ...(candidate.homepageContent ?? {}) } as HomepageContent;
   const homepageFields = ['heroEyebrow', 'heroStatement', 'identityEyebrow', 'identityTitle'] as const;
   for (const field of homepageFields) {
     const localized = homepageContent?.[field];
-    if (!localized || typeof localized !== 'object' || (['fr', 'en', 'ar'] as const).some((locale) => !localized[locale]?.trim())) {
-      throw new SiteSettingsValidationError(`Homepage content field ${field} requires FR, EN, and AR values.`);
+    if (!localized || typeof localized !== 'object') {
+      throw new SiteSettingsValidationError(`Homepage content field ${field} requires FR, EN, and AR values.`, [{ path: `homepageContent.${field}`, message: 'Enter FR, EN, and AR values.' }]);
+    }
+    const missing = (['fr', 'en', 'ar'] as const).filter((locale) => !localized[locale]?.trim());
+    if (missing.length) {
+      throw new SiteSettingsValidationError(`Homepage content field ${field} requires FR, EN, and AR values.`, missing.map((locale) => ({ path: `homepageContent.${field}.${locale}`, message: `${locale.toUpperCase()} value is required.` })));
     }
   }
 

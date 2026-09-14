@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getMediaAsset } from '../../content/media';
-import { homepageHero, homepageIdentity, routeHref } from '../../content/restaurant';
+import { homepageActions, routeHref } from '../../content/restaurant';
 import { localizedText, locales, type Locale, type RestaurantProfile } from '../../content/models';
 import { createMenuRepository } from '../../content/menu-repository';
 import { PublicRestaurantStatus } from '../../components/public-restaurant-status';
@@ -80,11 +80,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <div className="hero-actions">
             {phone ? (
               <a className="hero-button hero-button-primary" href={phone.type === 'whatsapp' ? `https://wa.me/${phone.value.replace(/\D/g, '')}` : `tel:${phone.value}`}>
-                {localizedText(homepageHero.primaryAction, locale)}
+                {localizedText(homepageActions.primaryAction, locale)}
               </a>
             ) : null}
             <Link className="hero-button hero-button-secondary" href={routeHref(locale, 'menu')}>
-              {localizedText(homepageHero.secondaryAction, locale)}
+              {localizedText(homepageActions.secondaryAction, locale)}
             </Link>
           </div>
         </div>

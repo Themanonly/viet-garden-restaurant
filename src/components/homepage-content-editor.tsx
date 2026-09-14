@@ -14,6 +14,8 @@ const emptyContent: HomepageContent = {
   identityTitle: { fr: '', en: '', ar: '' },
 };
 
+export const homepageEditorFields = ['heroEyebrow', 'heroStatement', 'identityEyebrow', 'identityTitle'] as const;
+
 type ServerActions = {
   readAdminHomepageContent: () => Promise<AdminActionResult<HomepageContent>>;
   saveAdminHomepageContent: (content: HomepageContent) => Promise<AdminActionResult<HomepageContent>>;
@@ -24,11 +26,14 @@ function fieldErrors(error: AdminUiError | null): Record<string, string[]> {
   return Object.fromEntries((error?.info.fields ?? []).map((field) => [field.path.replace(/^homepageContent\./, ''), [field.message]]));
 }
 
+export function getHomepageFieldErrors(error: AdminUiError | null): Record<string, string[]> { return fieldErrors(error); }
+
 export function HomepageContentEditor({ serverActions }: { serverActions: ServerActions }) {
   const [draft, setDraft] = useState<HomepageContent>(emptyContent);
   const [saved, setSaved] = useState<HomepageContent>(emptyContent);
   const [state, setState] = useState<'loading' | 'ready' | 'saving' | 'error'>('loading');
   const [error, setError] = useState<AdminUiError | null>(null);
+  const isDirty = JSON.stringify(draft) !== JSON.stringify(saved);
 
   const load = async () => {
     const value = await serverActions.readAdminHomepageContent().then(unwrapAdminAction);
@@ -58,6 +63,6 @@ export function HomepageContentEditor({ serverActions }: { serverActions: Server
       <LocalizedFieldGroup id="identityEyebrow" label="Introduction small heading" helpText="The short line above the homepage introduction title." value={draft.identityEyebrow} errors={errors} required onChange={(locale, value) => update('identityEyebrow', locale, value)} />
       <LocalizedFieldGroup id="identityTitle" label="Introduction title" helpText="The main title of the homepage introduction." value={draft.identityTitle} errors={errors} required onChange={(locale, value) => update('identityTitle', locale, value)} />
     </section>
-    <div className="admin-editor-actions"><span className="admin-save-state" aria-live="polite">{state === 'saving' ? 'Saving...' : state === 'error' ? 'Save failed' : 'Saved'}</span><button type="button" className="admin-text-button" disabled={state === 'saving'} onClick={reset}>Cancel</button><button type="button" className="admin-primary-button" disabled={state === 'saving'} onClick={() => void save()}>{state === 'saving' ? 'Saving...' : 'Save changes'}</button></div>
+    <div className="admin-editor-actions"><span className="admin-save-state" aria-live="polite">{state === 'saving' ? 'Saving...' : state === 'error' ? 'Save failed' : isDirty ? 'Unsaved changes' : 'Saved'}</span><button type="button" className="admin-text-button" disabled={state === 'saving' || !isDirty} onClick={reset}>Cancel</button><button type="button" className="admin-primary-button" disabled={state === 'saving' || !isDirty} onClick={() => void save()}>{state === 'saving' ? 'Saving...' : 'Save changes'}</button></div>
   </div>;
 }
