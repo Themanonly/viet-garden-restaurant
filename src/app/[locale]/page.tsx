@@ -92,11 +92,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
-      <PublicLocations locations={locations} locale={locale} />
-
       <section className="schedule-section" aria-labelledby="schedule-section-title">
         <PublicWeeklySchedule availability={menu.availability} locale={locale} />
       </section>
+
+      <PublicLocations locations={locations} locale={locale} />
     </main>
   );
 }
