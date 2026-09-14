@@ -2118,24 +2118,6 @@ button, input, select, textarea {
   backdrop-filter: blur(14px);
 }
 
-.nav-order-link {
-  min-height: 38px;
-  padding-inline: 0.9rem;
-  border: 1px solid rgba(42, 29, 23, 0.28);
-  border-radius: 999px;
-}
-
-.nav-order-link::after {
-  display: none;
-}
-
-.nav-order-link:hover,
-.nav-order-link:focus-visible {
-  border-color: var(--color-forest-deep);
-  background: var(--color-forest-deep);
-  color: var(--color-shell);
-}
-
 .footer-inner,
 .footer-inner-with-ordering {
   gap: clamp(1.5rem, 3vw, 2.5rem);
