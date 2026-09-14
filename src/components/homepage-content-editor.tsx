@@ -6,6 +6,7 @@ import type { AdminActionResult } from '../content/admin-menu-actions';
 import type { HomepageContent, HomepageVisuals } from '../content/site-settings';
 import { LocalizedFieldGroup } from './localized-field-group';
 import type { AdminUiError, AdminUiMediaDto } from '../content/admin-menu-ui-adapter';
+import { ContextualMediaField } from './contextual-media-field';
 
 const emptyContent: HomepageContent = {
   heroEyebrow: { fr: '', en: '', ar: '' },
@@ -84,91 +85,6 @@ export function HomepageContentForm({ draft, saved, state, error, onChange, onRe
   </div>;
 }
 
-function MediaSelectorField({
-  id,
-  label,
-  helpText,
-  value,
-  mediaList,
-  allowedTypes,
-  error,
-  onChange,
-}: {
-  id: keyof HomepageVisuals;
-  label: string;
-  helpText: string;
-  value: string | null;
-  mediaList: AdminUiMediaDto[];
-  allowedTypes?: Array<'image' | 'video'>;
-  error?: string[];
-  onChange: (mediaId: string | null) => void;
-}) {
-  const currentAsset = value ? mediaList.find((asset) => asset.id === value) : undefined;
-  const isUnavailable = Boolean(value && !currentAsset);
-  const filteredList = allowedTypes ? mediaList.filter((asset) => allowedTypes.includes(asset.type as 'image' | 'video')) : mediaList;
-
-  return (
-    <div className="admin-field admin-visual-selector-field" style={{ marginBottom: '1.5rem' }}>
-      <label htmlFor={`visual-${id}`} style={{ fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>
-        {label}
-      </label>
-      <p className="admin-field-help" style={{ fontSize: '0.875rem', opacity: 0.8, marginBottom: '0.5rem' }}>
-        {helpText}
-      </p>
-
-      {/* Asset Preview & Name */}
-      <div className="admin-media-preview-container" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-        {currentAsset ? (
-          <div style={{ width: 80, height: 50, borderRadius: 4, overflow: 'hidden', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {currentAsset.type === 'video' ? (
-              <video src={currentAsset.reference} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
-            ) : (
-              <img src={currentAsset.reference} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            )}
-          </div>
-        ) : isUnavailable ? (
-          <div className="admin-badge admin-badge-warning" style={{ padding: '0.25rem 0.5rem', borderRadius: 4, background: '#fff3cd', color: '#856404', fontSize: '0.85rem' }}>
-            Asset unavailable
-          </div>
-        ) : null}
-
-        {currentAsset ? (
-          <span className="admin-media-name" style={{ fontWeight: 500 }}>
-            {getMediaDisplayName(currentAsset)}
-          </span>
-        ) : null}
-      </div>
-
-      <div className="admin-visual-selector-actions">
-        <select
-          id={`visual-${id}`}
-          className="admin-select"
-          value={value ?? ''}
-          onChange={(e) => onChange(e.target.value || null)}
-        >
-          <option value="">-- Choose from Media Library --</option>
-          {filteredList.map((asset) => (
-            <option key={asset.id} value={asset.id}>
-              {getMediaDisplayName(asset)} ({asset.type})
-            </option>
-          ))}
-        </select>
-        {value ? (
-          <button type="button" className="admin-text-button" onClick={() => onChange(null)}>
-            Clear
-          </button>
-        ) : null}
-      </div>
-
-      {error?.map((msg) => (
-        <p className="admin-field-error" key={msg} style={{ color: '#d9534f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-          {msg}
-        </p>
-      ))}
-    </div>
-  );
-}
-
 export function HomepageVisualsForm({
   draft,
   saved,
@@ -177,6 +93,7 @@ export function HomepageVisualsForm({
   error,
   validationErrors,
   onChange,
+  onMediaAdded,
   onReset,
   onSave,
 }: {
@@ -187,6 +104,7 @@ export function HomepageVisualsForm({
   error: AdminUiError | null;
   validationErrors: Record<string, string[]>;
   onChange: (field: keyof HomepageVisuals, value: string | null) => void;
+  onMediaAdded?: (asset: AdminUiMediaDto) => void;
   onReset: () => void;
   onSave: () => void;
 }) {
@@ -203,41 +121,41 @@ export function HomepageVisualsForm({
             <p className="admin-eyebrow">Visuals</p>
             <h2 id="homepage-visuals-title">Homepage visuals</h2>
             <p className="admin-section-description">
-              Select media assets from the Media Library to use for the homepage background video/image, poster, and introduction image.
+              Upload each visual here, or choose an image already stored.
             </p>
           </div>
         </div>
 
-        <MediaSelectorField
-          id="heroVisualMediaId"
+        <ContextualMediaField
           label="Hero visual"
           helpText="Background video or image displayed at the top of the homepage hero section."
           value={draft.heroVisualMediaId}
-          mediaList={mediaList}
+          media={mediaList}
           allowedTypes={['image', 'video']}
           error={combinedErrors.heroVisualMediaId}
+          onMediaAdded={onMediaAdded}
           onChange={(val) => onChange('heroVisualMediaId', val)}
         />
 
-        <MediaSelectorField
-          id="heroPosterMediaId"
+        <ContextualMediaField
           label="Hero video poster or fallback image"
           helpText="Image displayed while hero video is loading, or as a background fallback."
           value={draft.heroPosterMediaId}
-          mediaList={mediaList}
+          media={mediaList}
           allowedTypes={['image']}
           error={combinedErrors.heroPosterMediaId}
+          onMediaAdded={onMediaAdded}
           onChange={(val) => onChange('heroPosterMediaId', val)}
         />
 
-        <MediaSelectorField
-          id="identityVisualMediaId"
+        <ContextualMediaField
           label="Introduction image"
           helpText="Image displayed in the two-column homepage introduction section."
           value={draft.identityVisualMediaId}
-          mediaList={mediaList}
+          media={mediaList}
           allowedTypes={['image']}
           error={combinedErrors.identityVisualMediaId}
+          onMediaAdded={onMediaAdded}
           onChange={(val) => onChange('identityVisualMediaId', val)}
         />
       </section>
@@ -381,6 +299,7 @@ export function HomepageContentEditor({ serverActions }: { serverActions: Server
         error={visualsError}
         validationErrors={visualValidationErrors}
         onChange={updateVisuals}
+        onMediaAdded={(asset) => setMediaList((current) => [...current.filter((item) => item.id !== asset.id), asset])}
         onReset={resetVisuals}
         onSave={() => void saveVisuals()}
       />
