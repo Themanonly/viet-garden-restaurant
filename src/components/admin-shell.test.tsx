@@ -17,6 +17,7 @@ test('admin shell renders a titled operations shell and semantic navigation', ()
 test('admin navigation exposes the admin destinations grouped by area', () => {
   assert.deepEqual(adminNavigation.map((item) => item.href), [
     '/admin/business',
+    '/admin/locations',
     '/admin/status',
     '/admin/contact',
     '/admin/ordering',
@@ -34,5 +35,6 @@ test('admin navigation resolves the active destination and preserves route compa
   assert.equal(getActiveAdminNavigationItem('/admin/status')?.label, 'Hours & Status');
   assert.equal(getActiveAdminNavigationItem('/admin/contact')?.label, 'Contacts & Social');
   assert.equal(getActiveAdminNavigationItem('/admin/ordering')?.label, 'Ordering Channels');
+  assert.equal(getActiveAdminNavigationItem('/admin/locations')?.label, 'Locations');
   assert.equal(getActiveAdminNavigationItem('/unknown'), undefined);
 });

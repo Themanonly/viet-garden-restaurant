@@ -3,6 +3,9 @@ import { createBrandSettingsRepository } from '../../content/brand-settings';
 import { createMediaRepository } from '../../content/media-repository';
 import { locales, type Locale } from '../../content/models';
 import { createRestaurantProfileRepository } from '../../content/restaurant-profile-repository';
+import { createLocationRepository } from '../../content/location-repository';
+import { LocationService } from '../../content/location-service';
+import { restaurantProfile } from '../../content/restaurant';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -23,6 +26,7 @@ export default async function LocaleTemplate({
   const logo = await mediaRepository.getMedia(await settings.getBrandLogoMediaId());
   const media = await mediaRepository.listMedia();
   const profile = await createRestaurantProfileRepository().getProfile();
+  const locations = await new LocationService(createLocationRepository(restaurantProfile.id), restaurantProfile.id).listLocations();
 
-  return <SiteShell locale={locale} logo={logo} profile={profile} media={media}>{children}</SiteShell>;
+  return <SiteShell locale={locale} logo={logo} profile={profile} media={media} locations={locations.filter((location) => location.enabled)}>{children}</SiteShell>;
 }

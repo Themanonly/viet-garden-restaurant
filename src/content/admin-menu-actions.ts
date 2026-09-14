@@ -8,6 +8,8 @@ import type { AdminUiContactCreateInput, AdminUiContactUpdateInput, AdminUiOrder
 import { getAdminRestaurantProfileUiAdapter } from './admin-restaurant-profile-adapter-instance';
 import type { AdminUiPromotionCreateInput, AdminUiPromotionUpdateInput } from './admin-promotion-ui-adapter';
 import { getAdminPromotionUiAdapter } from './admin-promotion-adapter-instance';
+import type { AdminLocationCreateInput, AdminLocationUpdateInput } from './admin-location-ui-adapter';
+import { getAdminLocationUiAdapter } from './admin-location-adapter-instance';
 
 export type AdminActionResult<T> = { ok: true; value: T } | { ok: false; error: AdminErrorInfo };
 
@@ -176,6 +178,14 @@ export async function deleteAdminOrderingChannel(id: string) {
 export async function reorderAdminOrderingChannels(ids: string[]) {
   return execute('ordering', () => getAdminRestaurantProfileUiAdapter().reorderOrderingChannels(ids));
 }
+
+export async function readAdminLocations() { return execute('location', () => getAdminLocationUiAdapter().listLocations()); }
+export async function createAdminLocation(input: AdminLocationCreateInput) { return execute('location', () => getAdminLocationUiAdapter().createLocation(input)); }
+export async function updateAdminLocation(id: string, input: AdminLocationUpdateInput) { return execute('location', () => getAdminLocationUiAdapter().updateLocation(id, input)); }
+export async function setAdminLocationEnabled(id: string, enabled: boolean) { return execute('location', () => getAdminLocationUiAdapter().setEnabled(id, enabled)); }
+export async function setAdminLocationPrimary(id: string) { return execute('location', () => getAdminLocationUiAdapter().setPrimary(id)); }
+export async function reorderAdminLocations(ids: string[]) { return execute('location', () => getAdminLocationUiAdapter().reorderLocations(ids)); }
+export async function deleteAdminLocation(id: string) { return execute('location', () => getAdminLocationUiAdapter().deleteLocation(id)); }
 
 export async function readAdminPromotions() { return execute('promotion', () => getAdminPromotionUiAdapter().listPromotions()); }
 export async function createAdminPromotion(input: AdminUiPromotionCreateInput) { return execute('promotion', () => getAdminPromotionUiAdapter().createPromotion(input)); }

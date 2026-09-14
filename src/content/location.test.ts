@@ -77,6 +77,11 @@ test('location CRUD supports update, visibility, primary selection, and determin
   assert.equal((await service.listLocations()).find((candidate) => candidate.id === first.id)?.city, 'Rabat');
   await service.reorderLocations([second.id, first.id]);
   assert.deepEqual((await service.listLocations()).map((candidate) => candidate.id), [second.id, first.id]);
+  await service.removeLocation(second.id);
+  assert.deepEqual((await service.listLocations()).map((candidate) => candidate.id), [first.id]);
+  assert.equal((await service.listLocations())[0]?.isPrimary, true);
+  await service.removeLocation(first.id);
+  assert.deepEqual(await service.listEnabledLocations(), []);
 });
 
 test('hidden incomplete drafts are accepted but cannot be enabled', async () => {

@@ -5,9 +5,9 @@ import { footerAnchorIds, restaurantProfile, routeHref } from './restaurant';
 test('Find Us and Contact use independent footer anchors', () => {
   assert.equal(footerAnchorIds.contact, 'contact-details');
   assert.equal(footerAnchorIds.location, 'location-details');
-  assert.equal(routeHref('fr', 'location'), '/fr#location-details');
+  assert.equal(routeHref('fr', 'location'), '/fr#locations');
   assert.equal(routeHref('en', 'contact'), '/en#contact-details');
-  assert.equal(routeHref('ar', 'location'), '/ar#location-details');
+  assert.equal(routeHref('ar', 'location'), '/ar#locations');
   assert.notEqual(routeHref('fr', 'location'), routeHref('fr', 'contact'));
   assert.equal(restaurantProfile.orderingChannels.find((channel) => channel.type === 'glovo')?.url, 'https://glovoapp.com/ma/fr/casablanca/viet-garden-cas');
 });

@@ -6,6 +6,10 @@ import { createMenuRepository } from '../../content/menu-repository';
 import { PublicRestaurantStatus } from '../../components/public-restaurant-status';
 import { PublicWeeklySchedule } from '../../components/public-weekly-schedule';
 import { createRestaurantProfileRepository } from '../../content/restaurant-profile-repository';
+import { createLocationRepository } from '../../content/location-repository';
+import { LocationService } from '../../content/location-service';
+import { restaurantProfile } from '../../content/restaurant';
+import { PublicLocations } from '../../components/public-locations';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +32,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const heroVideo = getMediaAsset('hero-visual');
   const identityImage = getMediaAsset('identity-visual');
   const profile = await createRestaurantProfileRepository().getProfile();
+  const locations = await new LocationService(createLocationRepository(restaurantProfile.id), restaurantProfile.id).listEnabledLocations();
   const phone = profile.contacts.find((item) => item.enabled && (item.type === 'phone' || item.type === 'whatsapp'));
   const menu = await createMenuRepository().getMenu();
   const businessCopy = getHomepageBusinessCopy(profile, locale);
@@ -84,9 +89,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <p className="identity-eyebrow">{localizedText(homepageIdentity.eyebrow, locale)}</p>
           <h2 id="identity-title">{localizedText(homepageIdentity.title, locale)}</h2>
           <p className="identity-copy">{businessCopy.about}</p>
-          <p className="identity-location">{businessCopy.address}</p>
+          {locations.length > 0 ? <a className="identity-location" href="#locations">{locations.length === 1 ? localizedText({ fr: 'Voir notre adresse', en: 'View our location', ar: 'عرض موقعنا' }, locale) : localizedText({ fr: `Découvrir nos ${locations.length} adresses`, en: `Explore our ${locations.length} locations`, ar: `استكشف فروعنا (${locations.length})` }, locale)}</a> : null}
         </div>
       </section>
+
+      <PublicLocations locations={locations} locale={locale} />
 
       <section className="schedule-section" aria-labelledby="schedule-section-title">
         <PublicWeeklySchedule availability={menu.availability} locale={locale} />

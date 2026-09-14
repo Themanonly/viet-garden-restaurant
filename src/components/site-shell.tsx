@@ -10,6 +10,7 @@ import { contactPresentation, orderingPresentation, socialPresentation } from '.
 import { resolvePlatformMedia } from '../content/platform-media';
 import { PlatformMediaIcon } from './platform-media-icon';
 import { PlatformIcon } from './platform-icon';
+import { seedLocationFromProfile, type Location } from '../content/location';
 
 function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash }: { localeOptions: Locale[]; currentLocale: Locale; pathname: string | null; currentHash: string }) {
   return (
@@ -36,7 +37,7 @@ function LanguageSwitcher({ localeOptions, currentLocale, pathname, currentHash 
   );
 }
 
-export function SiteShell({ locale, logo, profile, media = [], children }: { locale: Locale; logo?: MediaAsset; profile?: RestaurantProfile; media?: MediaAsset[]; children: ReactNode }) {
+export function SiteShell({ locale, logo, profile, media = [], locations, children }: { locale: Locale; logo?: MediaAsset; profile?: RestaurantProfile; media?: MediaAsset[]; locations?: Location[]; children: ReactNode }) {
   const localeOptions: Locale[] = ['fr', 'en', 'ar'];
   const pathname = usePathname();
   const pathLocale = pathname?.split('/')[1] as Locale | undefined;
@@ -45,10 +46,9 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
   const menuRef = useRef<HTMLDetailsElement>(null);
   const menuLabel = localizedText({ fr: 'Menu', en: 'Menu', ar: 'القائمة' }, currentLocale);
   const managedProfile = profile ?? restaurantProfile;
+  const managedLocations = locations ?? [seedLocationFromProfile(managedProfile)];
   const resolveMedia = (id?: string) => resolvePlatformMedia(media, id);
-  const locationAddress = localizedText(managedProfile.address, currentLocale);
-  const locationMeta = `${managedProfile.city} ${managedProfile.postalCode}`.trim();
-  const locationIncludesMeta = locationAddress.includes(managedProfile.postalCode) && (locationAddress.includes(managedProfile.city) || (currentLocale === 'ar' && /[,،]/.test(locationAddress)));
+  const primaryLocation = managedLocations.find((location) => location.isPrimary) ?? managedLocations[0];
   const enabledOrderingChannels = managedProfile.orderingChannels.filter((channel) => channel.enabled).sort((first, second) => first.sortOrder - second.sortOrder);
   const genericOrderingLabel = localizedText({ fr: 'Commander', en: 'Order Online', ar: 'اطلب الآن' }, currentLocale);
   const orderingLabel = localizedText({ fr: 'Commander', en: 'Order Online', ar: 'اطلب عبر الإنترنت' }, currentLocale);
@@ -62,7 +62,7 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
       className={className}
       aria-label={localizedText({ fr: 'Navigation principale', en: 'Main navigation', ar: 'التنقل الرئيسي' }, currentLocale)}
     >
-      {siteNavigation.map((item) => {
+      {siteNavigation.filter((item) => item.route !== 'location' || managedLocations.length > 0).map((item) => {
         const href = item.route === 'home' ? `/${currentLocale}` : routeHref(currentLocale, item.route);
         return (
           <a key={item.route} href={href} className="nav-link" onClick={closeMenu}>
@@ -150,17 +150,13 @@ export function SiteShell({ locale, logo, profile, media = [], children }: { loc
             ))}
           </div>
 
-          <div id={footerAnchorIds.location} className="footer-column">
+          {primaryLocation ? <div id={footerAnchorIds.location} className="footer-column">
             <p className="footer-label">{localizedText({ fr: 'Nous trouver', en: 'Find Us', ar: 'موقعنا' }, currentLocale)}</p>
-            <a href={managedProfile.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-location-card" aria-label={`${locationAddress}${locationIncludesMeta ? '' : `, ${locationMeta}`}, ${localizedText({ fr: 'Ouvrir dans Google Maps', en: 'Open in Google Maps', ar: 'فتح في خرائط Google' }, currentLocale)}`}>
+            {managedLocations.length === 1 ? <a href={primaryLocation.googleMapsUrl} target="_blank" rel="noreferrer" className="footer-link footer-location-card" aria-label={localizedText(primaryLocation.address, currentLocale)}>
               <PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresse', en: 'Address', ar: 'العنوان' }, currentLocale)} />
-              <span className="footer-location-copy">
-                <span>{locationAddress}</span>
-                {!locationIncludesMeta ? <span className="footer-location-meta">{locationMeta}</span> : null}
-                <span className="footer-location-action">{localizedText({ fr: 'Ouvrir dans Google Maps', en: 'Open in Google Maps', ar: 'فتح في خرائط Google' }, currentLocale)}</span>
-              </span>
-            </a>
-          </div>
+              <span className="footer-location-copy"><span>{localizedText(primaryLocation.address, currentLocale)}</span>{localizedText(primaryLocation.address, currentLocale).includes(primaryLocation.postalCode) && (localizedText(primaryLocation.address, currentLocale).includes(primaryLocation.city) || (currentLocale === 'ar' && /[,،]/.test(localizedText(primaryLocation.address, currentLocale)))) ? null : <span className="footer-location-meta">{primaryLocation.city} {primaryLocation.postalCode}</span>}<span className="footer-location-action">{localizedText({ fr: 'Ouvrir dans Google Maps', en: 'Open in Google Maps', ar: 'فتح في خرائط Google' }, currentLocale)}</span></span>
+            </a> : <a href={localizedPathname(currentLocale, pathname, '#locations')} className="footer-link footer-location-card"><PlatformIcon kind="location" className="footer-platform-icon" label={localizedText({ fr: 'Adresses', en: 'Locations', ar: 'الفروع' }, currentLocale)} /><span className="footer-location-copy"><span>{localizedText({ fr: 'Voir toutes nos adresses', en: 'View all locations', ar: 'عرض جميع فروعنا' }, currentLocale)}</span><span className="footer-location-meta">{primaryLocation.city}</span></span></a>}
+          </div> : null}
 
           {enabledOrderingChannels.length > 0 ? (
             <div id={footerAnchorIds.ordering} className="footer-column">

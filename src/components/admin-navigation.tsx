@@ -18,6 +18,7 @@ export const adminNavigationGroups: AdminNavigationGroup[] = [
     label: 'Business',
     items: [
       { href: '/admin/business', label: 'Business Information' },
+      { href: '/admin/locations', label: 'Locations' },
       { href: '/admin/status', label: 'Hours & Status' },
       { href: '/admin/contact', label: 'Contacts & Social' },
       { href: '/admin/ordering', label: 'Ordering Channels' },

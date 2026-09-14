@@ -80,6 +80,14 @@ export class LocationService {
     return clone(next.find((candidate) => candidate.id === id) as Location);
   }
 
+  async removeLocation(id: string): Promise<void> {
+    const locations = await this.listLocations();
+    const target = locations.find((location) => location.id === id);
+    if (!target) throw new LocationValidationError([{ code: 'not-found', message: `Location not found: ${id}.`, path: 'id' }]);
+    const remaining = locations.filter((location) => location.id !== id);
+    await this.repository.replaceLocations(this.applyPrimaryRule(remaining));
+  }
+
   async reorderLocations(ids: string[]): Promise<Location[]> {
     const locations = await this.listLocations();
     if (ids.length !== locations.length || new Set(ids).size !== ids.length || ids.some((id) => !locations.some((location) => location.id === id))) {
