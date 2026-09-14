@@ -25,7 +25,7 @@ export async function seedSupabaseBaseline(database: SupabaseDatabaseClient = cr
   assert.equal(menuDocument.items.length, 45);
   assert.equal(menuDocument.featuredSections.length, 1);
   assert.equal(menuDocument.featuredSections[0]?.itemIds.length, 3);
-  assert.equal(mediaCatalog.length, 48);
+  assert.equal(mediaCatalog.length, 49);
 
   await database.upsert('media', mediaCatalog.map(mediaRow), 'id');
   const revisionRows = await database.select<RevisionRow>('content_revisions', 'select=revision&id=eq.default');
@@ -43,7 +43,7 @@ export async function seedSupabaseBaseline(database: SupabaseDatabaseClient = cr
   assert.equal(items.length, 45);
   assert.equal(sections.length, 1);
   assert.equal(sectionItems.length, 3);
-  assert.equal(media.length, 48);
+  assert.equal(media.length, 49);
 }
 
 if (process.argv[1]?.endsWith('seed-supabase.ts')) {
