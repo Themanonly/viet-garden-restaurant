@@ -69,12 +69,18 @@ const schemaDayMap: Record<MenuWeekday, string> = {
   sunday: 'Sunday',
 };
 
+export type JsonLdMediaOptions = {
+  imageUrl?: string;
+  logoUrl?: string;
+};
+
 export function getRestaurantJsonLd(
   locale: Locale,
   profile: RestaurantProfile = restaurantProfile,
   locations: Location[] = [],
   availability?: MenuAvailability,
   siteOriginOverride?: string,
+  mediaOptions?: JsonLdMediaOptions,
 ) {
   const siteOrigin = getSiteOrigin(siteOriginOverride);
   const primaryPhone = profile.contacts
@@ -127,6 +133,14 @@ export function getRestaurantJsonLd(
     .sort((first, second) => first.sortOrder - second.sortOrder)
     .map((s) => s.url);
 
+  const image = mediaOptions?.imageUrl
+    ? (mediaOptions.imageUrl.startsWith('http') ? mediaOptions.imageUrl : `${siteOrigin}${mediaOptions.imageUrl}`)
+    : `${siteOrigin}/media/viet-garden-hero-poster.jpg`;
+
+  const logo = mediaOptions?.logoUrl
+    ? (mediaOptions.logoUrl.startsWith('http') ? mediaOptions.logoUrl : `${siteOrigin}${mediaOptions.logoUrl}`)
+    : `${siteOrigin}/media/viet-garden-logo.png`;
+
   return {
     '@context': 'https://schema.org',
     '@type': 'Restaurant',
@@ -135,8 +149,8 @@ export function getRestaurantJsonLd(
     alternateName: ['Viet Garden', 'VIET GARDEN RESTAURANT & COFEE'],
     description: localizedText(profile.description, locale),
     url: `${siteOrigin}/${locale}`,
-    image: `${siteOrigin}/media/viet-garden-hero-poster.jpg`,
-    logo: `${siteOrigin}/media/viet-garden-logo.png`,
+    image,
+    logo,
     ...(primaryPhone ? { telephone: primaryPhone } : {}),
     priceRange: '$$',
     servesCuisine: ['Vietnamese', 'Asian', 'Sushi'],

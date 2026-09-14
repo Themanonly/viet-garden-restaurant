@@ -9,6 +9,10 @@ import { LocationService } from '../../content/location-service';
 import { createMenuRepository } from '../../content/menu-repository';
 import { LocaleDocumentAttributes } from '../../components/locale-document-attributes';
 
+import { createBrandSettingsRepository } from '../../content/brand-settings';
+import { createSiteSettingsRepository } from '../../content/site-settings';
+import { createMediaRepository } from '../../content/media-repository';
+
 const supportedLocales = locales;
 
 type LocaleLayoutProps = {
@@ -18,6 +22,28 @@ type LocaleLayoutProps = {
 
 export function generateStaticParams() {
   return supportedLocales.map((locale) => ({ locale }));
+}
+
+async function resolveSeoMedia() {
+  try {
+    const mediaRepo = createMediaRepository();
+    const brandLogoId = await createBrandSettingsRepository().getBrandLogoMediaId().catch(() => 'brand-logo');
+    const logoAsset = await mediaRepo.getMedia(brandLogoId).catch(() => undefined);
+
+    const settings = await createSiteSettingsRepository().getSettings().catch(() => undefined);
+    const posterId = settings?.homepageVisuals?.heroPosterMediaId ?? 'hero-poster';
+    const posterAsset = await mediaRepo.getMedia(posterId).catch(() => undefined);
+
+    return {
+      logoUrl: logoAsset?.reference ?? '/media/viet-garden-logo.png',
+      imageUrl: posterAsset?.reference ?? '/media/viet-garden-hero-poster.jpg',
+    };
+  } catch {
+    return {
+      logoUrl: '/media/viet-garden-logo.png',
+      imageUrl: '/media/viet-garden-hero-poster.jpg',
+    };
+  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> | { locale: string } }): Promise<Metadata> {
@@ -32,6 +58,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const siteUrl = `${siteOrigin}/${locale}`;
   const ogLocale = locale === 'fr' ? 'fr_FR' : locale === 'ar' ? 'ar_MA' : 'en_US';
   const siteName = localizedText(profile.name, locale);
+  const { imageUrl } = await resolveSeoMedia();
+  const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${siteOrigin}${imageUrl}`;
 
   return {
     title: titleText,
@@ -47,7 +75,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       type: 'website',
       images: [
         {
-          url: `${siteOrigin}/media/viet-garden-hero-poster.jpg`,
+          url: fullImageUrl,
           width: 1200,
           height: 630,
           alt: `${siteName} ${profile.city}`.trim(),
@@ -58,7 +86,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       card: 'summary_large_image',
       title: titleText,
       description: descriptionText,
-      images: [`${siteOrigin}/media/viet-garden-hero-poster.jpg`],
+      images: [fullImageUrl],
     },
   };
 }
@@ -75,7 +103,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const profile = await createRestaurantProfileRepository().getProfile();
   const locations = await new LocationService(createLocationRepository(profile.id), profile.id).listEnabledLocations();
   const menu = await createMenuRepository().getMenu();
-  const jsonLd = getRestaurantJsonLd(locale, profile, locations, menu.availability);
+  const seoMedia = await resolveSeoMedia();
+  const jsonLd = getRestaurantJsonLd(locale, profile, locations, menu.availability, undefined, seoMedia);
 
   return (
     <div dir={dir}>

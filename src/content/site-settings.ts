@@ -11,15 +11,23 @@ export type HomepageContent = {
   identityTitle: LocalizedText;
 };
 
+export type HomepageVisuals = {
+  heroVisualMediaId: string | null;
+  heroPosterMediaId: string | null;
+  identityVisualMediaId: string | null;
+};
+
 export type SiteSettings = {
   publicWebsiteEnabled: boolean;
   maintenanceMode: boolean;
   homepageContent: HomepageContent;
+  homepageVisuals: HomepageVisuals;
 };
 
 export const publicWebsiteEnabledSettingKey = 'site_public_website_enabled';
 export const maintenanceModeSettingKey = 'site_maintenance_mode';
 export const homepageContentSettingKey = 'homepage_content';
+export const homepageVisualsSettingKey = 'homepage_visuals';
 
 export const defaultHomepageContent: HomepageContent = {
   heroEyebrow: { fr: 'Cuisine vietnamienne · Casablanca', en: 'Vietnamese cuisine · Casablanca', ar: 'مطبخ فيتنامي · الدار البيضاء' },
@@ -28,10 +36,17 @@ export const defaultHomepageContent: HomepageContent = {
   identityTitle: { fr: 'Une table vietnamienne à Casablanca', en: 'A Vietnamese table in Casablanca', ar: 'مائدة فيتنامية في الدار البيضاء' },
 };
 
+export const defaultHomepageVisuals: HomepageVisuals = {
+  heroVisualMediaId: 'hero-visual',
+  heroPosterMediaId: 'hero-poster',
+  identityVisualMediaId: 'identity-visual',
+};
+
 export const defaultSiteSettings: SiteSettings = {
   publicWebsiteEnabled: true,
   maintenanceMode: false,
   homepageContent: defaultHomepageContent,
+  homepageVisuals: defaultHomepageVisuals,
 };
 
 export interface SiteSettingsRepository {
@@ -87,10 +102,19 @@ function normalizeSettings(value: Partial<SiteSettings> | undefined): SiteSettin
     }
   }
 
+  const homepageVisuals = { ...defaultHomepageVisuals, ...(candidate.homepageVisuals ?? {}) } as HomepageVisuals;
+  for (const field of ['heroVisualMediaId', 'heroPosterMediaId', 'identityVisualMediaId'] as const) {
+    const val = homepageVisuals[field];
+    if (val !== null && typeof val !== 'string') {
+      throw new SiteSettingsValidationError(`Homepage visual field ${field} must be a string.`, [{ path: `homepageVisuals.${field}`, message: 'Invalid media ID.' }]);
+    }
+  }
+
   return {
     publicWebsiteEnabled: candidate.publicWebsiteEnabled,
     maintenanceMode: candidate.maintenanceMode,
     homepageContent: structuredClone(homepageContent),
+    homepageVisuals: structuredClone(homepageVisuals),
   };
 }
 
@@ -104,11 +128,13 @@ function readPersistedSettings(raw: unknown): SiteSettings {
   const publicWebsiteEnabled = typeof raw.publicWebsiteEnabled === 'boolean' ? raw.publicWebsiteEnabled : undefined;
   const maintenanceMode = typeof raw.maintenanceMode === 'boolean' ? raw.maintenanceMode : undefined;
   const homepageContent = isRecord(raw.homepageContent) ? raw.homepageContent as HomepageContent : undefined;
+  const homepageVisuals = isRecord(raw.homepageVisuals) ? raw.homepageVisuals as HomepageVisuals : undefined;
 
   return normalizeSettings({
     publicWebsiteEnabled,
     maintenanceMode,
     homepageContent,
+    homepageVisuals,
   });
 }
 
@@ -157,16 +183,24 @@ export class SupabaseSiteSettingsRepository implements SiteSettingsRepository {
   constructor(private readonly database: SupabaseDatabaseClient = createSupabaseDatabaseClient()) {}
 
   async getSettings(): Promise<SiteSettings> {
-    const rows = await this.database.select<SiteSettingRow>('site_settings', `select=key,value&key=in.(${encodeURIComponent(publicWebsiteEnabledSettingKey)},${encodeURIComponent(maintenanceModeSettingKey)},${encodeURIComponent(homepageContentSettingKey)})`);
+    const rows = await this.database.select<SiteSettingRow>(
+      'site_settings',
+      `select=key,value&key=in.(${encodeURIComponent(publicWebsiteEnabledSettingKey)},${encodeURIComponent(maintenanceModeSettingKey)},${encodeURIComponent(homepageContentSettingKey)},${encodeURIComponent(homepageVisualsSettingKey)})`
+    );
     const state = Object.fromEntries(rows.map((row) => [row.key, row.value]));
     let homepageContent: HomepageContent | undefined;
     if (state[homepageContentSettingKey]) {
       try { homepageContent = JSON.parse(state[homepageContentSettingKey]) as HomepageContent; } catch { throw new SiteSettingsPersistenceError('invalid-persisted-settings', 'Persisted homepage content is invalid.'); }
     }
+    let homepageVisuals: HomepageVisuals | undefined;
+    if (state[homepageVisualsSettingKey]) {
+      try { homepageVisuals = JSON.parse(state[homepageVisualsSettingKey]) as HomepageVisuals; } catch { throw new SiteSettingsPersistenceError('invalid-persisted-settings', 'Persisted homepage visuals are invalid.'); }
+    }
     return normalizeSettings({
       publicWebsiteEnabled: state[publicWebsiteEnabledSettingKey] === 'true' ? true : state[publicWebsiteEnabledSettingKey] === 'false' ? false : undefined,
       maintenanceMode: state[maintenanceModeSettingKey] === 'true' ? true : state[maintenanceModeSettingKey] === 'false' ? false : undefined,
       homepageContent,
+      homepageVisuals,
     });
   }
 
@@ -177,6 +211,7 @@ export class SupabaseSiteSettingsRepository implements SiteSettingsRepository {
       { key: publicWebsiteEnabledSettingKey, value: String(next.publicWebsiteEnabled) },
       { key: maintenanceModeSettingKey, value: String(next.maintenanceMode) },
       { key: homepageContentSettingKey, value: JSON.stringify(next.homepageContent) },
+      { key: homepageVisualsSettingKey, value: JSON.stringify(next.homepageVisuals) },
     ], 'key');
     return next;
   }

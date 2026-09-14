@@ -11,7 +11,7 @@ import { LocationService } from '../../content/location-service';
 import { PublicLocations } from '../../components/public-locations';
 import { HomepageFeatured } from '../../components/homepage-featured';
 import { createMediaRepository } from '../../content/media-repository';
-import { createSiteSettingsRepository, defaultHomepageContent, type HomepageContent } from '../../content/site-settings';
+import { createSiteSettingsRepository, defaultHomepageContent, defaultHomepageVisuals, defaultSiteSettings, type HomepageContent } from '../../content/site-settings';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,10 +34,25 @@ export function getHomepageBusinessCopy(profile: RestaurantProfile, locale: Loca
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: rawLocale } = await params;
   const locale = (locales as readonly string[]).includes(rawLocale) ? (rawLocale as Locale) : 'fr';
-  const heroVideo = getMediaAsset('hero-visual');
-  const identityImage = getMediaAsset('identity-visual');
+  const mediaRepository = createMediaRepository();
   const profile = await createRestaurantProfileRepository().getProfile();
-  const homepageContent = await createSiteSettingsRepository().getSettings().then((settings) => settings.homepageContent).catch(() => defaultHomepageContent);
+  const settings = await createSiteSettingsRepository().getSettings().catch(() => defaultSiteSettings);
+  const homepageContent = settings.homepageContent ?? defaultHomepageContent;
+  const homepageVisuals = settings.homepageVisuals ?? defaultHomepageVisuals;
+
+  const heroVisualAsset = homepageVisuals.heroVisualMediaId !== null
+    ? (await mediaRepository.getMedia(homepageVisuals.heroVisualMediaId).catch(() => undefined)) ?? getMediaAsset(homepageVisuals.heroVisualMediaId)
+    : undefined;
+
+  const heroPosterAsset = homepageVisuals.heroPosterMediaId !== null
+    ? (await mediaRepository.getMedia(homepageVisuals.heroPosterMediaId).catch(() => undefined)) ?? getMediaAsset(homepageVisuals.heroPosterMediaId)
+    : undefined;
+
+  const identityImageAsset = homepageVisuals.identityVisualMediaId !== null
+    ? (await mediaRepository.getMedia(homepageVisuals.identityVisualMediaId).catch(() => undefined)) ?? getMediaAsset(homepageVisuals.identityVisualMediaId)
+    : undefined;
+
+  const heroPosterUrl = heroPosterAsset?.reference;
   const locations = await new LocationService(createLocationRepository(profile.id), profile.id).listEnabledLocations();
   const phone = profile.contacts.find((item) => item.enabled && (item.type === 'phone' || item.type === 'whatsapp'));
   const menu = await createMenuRepository().getMenu();
@@ -46,7 +61,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const featuredItems = featuredSection
     ? featuredSection.itemIds.map((itemId) => menu.items.find((item) => item.id === itemId)).filter((item): item is NonNullable<typeof item> => Boolean(item?.active)).slice(0, 3)
     : [];
-  const mediaRepository = createMediaRepository();
   const featuredMedia = await Promise.all([...new Set(featuredItems.flatMap((item) => item.mediaId ? [item.mediaId] : []))].map((mediaId) => mediaRepository.getMedia(mediaId)));
   const featuredMediaById = new Map(featuredMedia.filter((asset): asset is NonNullable<typeof asset> => Boolean(asset)).map((asset) => [asset.id, asset]));
 
@@ -54,8 +68,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     <main id="top" className="page-shell homepage-shell">
       <section className="hero" aria-labelledby="hero-title">
         <div className="hero-media" aria-hidden="true">
-          <img src="/media/viet-garden-hero-poster.jpg" alt="" className="hero-poster" />
-          {heroVideo ? (
+          {heroPosterUrl ? <img src={heroPosterUrl} alt="" className="hero-poster" /> : null}
+          {heroVisualAsset?.type === 'video' ? (
             <video
               className="hero-video"
               autoPlay
@@ -63,11 +77,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               loop
               playsInline
               preload="metadata"
-              poster="/media/viet-garden-hero-poster.jpg"
-              aria-label={localizedText(heroVideo.alt, locale)}
+              poster={heroPosterUrl}
+              aria-label={localizedText(heroVisualAsset.alt, locale)}
             >
-              <source src={heroVideo.reference} type="video/mp4" />
+              <source src={heroVisualAsset.reference} type="video/mp4" />
             </video>
+          ) : heroVisualAsset?.type === 'image' && heroVisualAsset.reference !== heroPosterUrl ? (
+            <img src={heroVisualAsset.reference} alt="" className="hero-poster" />
           ) : null}
           <div className="hero-shade" />
         </div>
@@ -94,8 +110,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       <section className="identity-section" aria-labelledby="identity-title">
         <div className="identity-media">
-          {identityImage ? (
-            <img src={identityImage.reference} alt={localizedText(identityImage.alt, locale)} />
+          {identityImageAsset ? (
+            <img src={identityImageAsset.reference} alt={localizedText(identityImageAsset.alt, locale)} />
           ) : null}
         </div>
         <div className="identity-content">

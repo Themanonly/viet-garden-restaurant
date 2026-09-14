@@ -36,7 +36,16 @@ export const mediaCatalog: MediaAsset[] = [
     reference: '/media/viet-garden-hero-hq.mp4',
     alt: { fr: 'Ambiance de Viet Garden Restaurant & Coffee', en: 'Viet Garden Restaurant & Coffee atmosphere', ar: 'أجواء مطعم ومقهى فييت غاردن' },
     visible: true,
-    sortOrder: 3,
+    sortOrder: 4,
+  },
+  {
+    id: 'hero-poster',
+    type: 'image',
+    source: 'local',
+    reference: '/media/viet-garden-hero-poster.jpg',
+    alt: { fr: 'Viet Garden Restaurant & Coffee Casablanca', en: 'Viet Garden Restaurant & Coffee Casablanca', ar: 'مطعم ومقهى فييت غاردن الدار البيضاء' },
+    visible: true,
+    sortOrder: 5,
   },
   {
     id: 'identity-visual',
@@ -49,7 +58,7 @@ export const mediaCatalog: MediaAsset[] = [
       ar: 'الديكور الداخلي الدافئ لمطعم ومقهى فييت غاردن في الدار البيضاء',
     },
     visible: true,
-    sortOrder: 4,
+    sortOrder: 6,
   },
   ...menuMediaCatalog,
 ];

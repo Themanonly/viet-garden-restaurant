@@ -17,7 +17,7 @@ function createSampleContent(): HomepageContent {
 test('homepage editor exposes all localized fields and hides technical data', () => {
   const markup = renderToStaticMarkup(<HomepageContentEditor serverActions={actions} />);
   assert.deepEqual(homepageEditorFields, ['heroEyebrow', 'heroStatement', 'identityEyebrow', 'identityTitle']);
-  assert.match(markup, /Loading homepage content/);
+  assert.match(markup, /Loading homepage (content|settings)/);
   assert.doesNotMatch(markup, /homepage_content|JSON|setting key/);
 });
 

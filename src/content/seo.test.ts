@@ -197,6 +197,21 @@ test('getRestaurantJsonLd derives acceptsReservations boolean from profile setti
   assert.strictEqual(jsonLdFalse.acceptsReservations, false);
 });
 
+test('getRestaurantJsonLd uses dynamic brand logo and homepage poster image when provided', () => {
+  const jsonLd = getRestaurantJsonLd('fr', restaurantProfile, [], undefined, undefined, {
+    logoUrl: '/media/custom-brand-logo.png',
+    imageUrl: '/media/custom-hero-poster.jpg',
+  });
+  assert.equal(jsonLd.logo, 'https://viet-garden.netlify.app/media/custom-brand-logo.png');
+  assert.equal(jsonLd.image, 'https://viet-garden.netlify.app/media/custom-hero-poster.jpg');
+});
+
+test('getRestaurantJsonLd falls back to default logo and image when mediaOptions are unassigned', () => {
+  const jsonLd = getRestaurantJsonLd('fr', restaurantProfile, [], undefined, undefined);
+  assert.equal(jsonLd.logo, 'https://viet-garden.netlify.app/media/viet-garden-logo.png');
+  assert.equal(jsonLd.image, 'https://viet-garden.netlify.app/media/viet-garden-hero-poster.jpg');
+});
+
 test('sitemap entries use the central site origin resolver', () => {
   const originalNextUrl = process.env.NEXT_PUBLIC_SITE_URL;
   try {
