@@ -159,6 +159,44 @@ test('getRestaurantJsonLd handles missing location, contacts, and schedule safel
   assert.equal(jsonLd.acceptsReservations, true);
 });
 
+test('getRestaurantJsonLd omits address when enabled location list is empty even if profile has legacy address', () => {
+  const profile = structuredClone(restaurantProfile);
+  profile.address = { fr: 'Ancienne adresse', en: 'Legacy address', ar: 'عنوان قديم' };
+  profile.city = 'Casablanca';
+  profile.postalCode = '20000';
+
+  const jsonLd = getRestaurantJsonLd('fr', profile, [], undefined, 'https://test-site.com') as Record<string, unknown>;
+  assert.equal('address' in jsonLd, false);
+
+  const disabledLocations: Location[] = [
+    {
+      id: 'loc-disabled',
+      profileId: profile.id,
+      name: { fr: 'Fermé', en: 'Closed', ar: 'مغلق' },
+      address: { fr: 'Adresse cachée', en: 'Hidden address', ar: 'عنوان مخفي' },
+      city: 'Casablanca',
+      postalCode: '20000',
+      isPrimary: false,
+      enabled: false,
+      sortOrder: 0,
+    },
+  ];
+  const jsonLdDisabled = getRestaurantJsonLd('fr', profile, disabledLocations, undefined, 'https://test-site.com') as Record<string, unknown>;
+  assert.equal('address' in jsonLdDisabled, false);
+});
+
+test('getRestaurantJsonLd derives acceptsReservations boolean from profile settings', () => {
+  const profileTrue = structuredClone(restaurantProfile);
+  profileTrue.settings = { reservationsAvailable: true };
+  const jsonLdTrue = getRestaurantJsonLd('en', profileTrue) as Record<string, unknown>;
+  assert.strictEqual(jsonLdTrue.acceptsReservations, true);
+
+  const profileFalse = structuredClone(restaurantProfile);
+  profileFalse.settings = { reservationsAvailable: false };
+  const jsonLdFalse = getRestaurantJsonLd('en', profileFalse) as Record<string, unknown>;
+  assert.strictEqual(jsonLdFalse.acceptsReservations, false);
+});
+
 test('sitemap entries use the central site origin resolver', () => {
   const originalNextUrl = process.env.NEXT_PUBLIC_SITE_URL;
   try {
@@ -172,4 +210,4 @@ test('sitemap entries use the central site origin resolver', () => {
     if (originalNextUrl) process.env.NEXT_PUBLIC_SITE_URL = originalNextUrl;
     else delete process.env.NEXT_PUBLIC_SITE_URL;
   }
-});
+});

@@ -6,8 +6,6 @@ import { getSiteOrigin } from '../content/seo';
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteOrigin()),
-  title: 'Viet Garden Restaurant & Coffee',
-  description: 'Official website foundation for Viet Garden Restaurant & Coffee.',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

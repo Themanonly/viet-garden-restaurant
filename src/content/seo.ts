@@ -33,25 +33,7 @@ export interface SeoMetadata {
   indexable: boolean;
 }
 
-const routeTitles: Record<ContentRoute, LocalizedText> = {
-  home: { fr: 'Viet Garden Restaurant & Coffee', en: 'Viet Garden Restaurant & Coffee', ar: 'مطعم ومقهى فييت غاردن' },
-  menu: { fr: 'Menu | Viet Garden Restaurant & Coffee', en: 'Menu | Viet Garden Restaurant & Coffee', ar: 'القائمة | مطعم ومقهى فييت غاردن' },
-};
-
-const basePaths = (locale: Locale, route: ContentRoute) => route === 'home' ? `/${locale}` : `/${locale}/${route}`;
-
-export const seoMetadata: Record<string, SeoMetadata> = Object.fromEntries(
-  (['fr', 'en', 'ar'] as Locale[]).flatMap((locale) =>
-    (['home', 'menu'] as ContentRoute[]).map((route) => [
-      basePaths(locale, route),
-      {
-        title: routeTitles[route],
-        description: restaurantProfile.description,
-        canonicalPath: basePaths(locale, route),
-        indexable: true,
-      },
-    ])),
-);
+const basePaths = (locale: Locale, route: ContentRoute) => (route === 'home' ? `/${locale}` : `/${locale}/${route}`);
 
 export const localeAlternates: Record<Locale, string> = {
   fr: '/fr',
@@ -111,15 +93,11 @@ export function getRestaurantJsonLd(
       postalCode: primaryLocation.postalCode,
       addressCountry: profile.country ?? 'MA',
     };
-  } else if (profile.address && (profile.address[locale] || profile.city || profile.postalCode)) {
-    address = {
-      '@type': 'PostalAddress',
-      streetAddress: localizedText(profile.address, locale),
-      addressLocality: profile.city ?? '',
-      postalCode: profile.postalCode ?? '',
-      addressCountry: profile.country ?? 'MA',
-    };
   }
+
+  const acceptsReservations = typeof profile.settings?.reservationsAvailable === 'boolean'
+    ? profile.settings.reservationsAvailable
+    : true;
 
   const openingHoursSpecification: Array<{
     '@type': string;
@@ -166,7 +144,7 @@ export function getRestaurantJsonLd(
     ...(socialUrls.length > 0 ? { sameAs: socialUrls } : {}),
     ...(openingHoursSpecification.length > 0 ? { openingHoursSpecification } : {}),
     hasMenu: `${siteOrigin}/${locale}/menu`,
-    acceptsReservations: true,
+    acceptsReservations,
   };
 }
 
